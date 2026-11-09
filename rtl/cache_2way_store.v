@@ -36,8 +36,8 @@ module cache_2way_store (
     // --------------------------------------------------------------------------
     // Storage Elements (4 sets x 2 ways)
     // --------------------------------------------------------------------------
-    reg         valid_way0 [0:3];
-    reg         valid_way1 [0:3];
+    reg [3:0]   valid_way0;
+    reg [3:0]   valid_way1;
     reg [25:0]  tag_way0   [0:3];
     reg [25:0]  tag_way1   [0:3];
     reg [127:0] data_way0  [0:3];
@@ -46,7 +46,7 @@ module cache_2way_store (
     // Per-set 1-bit LRU register:
     // 1'b0 => Way 0 is Least Recently Used (victim candidate)
     // 1'b1 => Way 1 is Least Recently Used (victim candidate)
-    reg         lru_bit    [0:3];
+    reg [3:0]   lru_bit;
 
     // --------------------------------------------------------------------------
     // Combinational Parallel Lookup & Tag Comparison
@@ -97,14 +97,11 @@ module cache_2way_store (
     // Synchronous State Updates (Reset, Fill, Touch)
     // --------------------------------------------------------------------------
     // Pure lookup (addr change without touch_en or fill_en) does NOT mutate state.
-    integer i;
     always @(posedge clk) begin
         if (rst) begin
-            for (i = 0; i < 4; i = i + 1) begin
-                valid_way0[i] <= 1'b0;
-                valid_way1[i] <= 1'b0;
-                lru_bit[i]    <= 1'b0;
-            end
+            valid_way0 <= 4'b0000;
+            valid_way1 <= 4'b0000;
+            lru_bit    <= 4'b0000;
         end else if (fill_en) begin
             // Write refill block into selected victim way and update recency
             if (victim_way == 1'b0) begin
