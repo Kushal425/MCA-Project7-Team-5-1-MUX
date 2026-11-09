@@ -1,0 +1,75 @@
+# ==============================================================================
+# Modern Computer Architecture (MCA) - Git Ignore Configuration
+# ==============================================================================
+
+# Operating System & Editor Metadata
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+*~
+*.swp
+*.swo
+.vscode/
+.idea/
+
+# Icarus Verilog & Simulation Output
+*.vvp
+*.vcd
+*.out
+*.o
+*.log
+sim_build/
+dump.vcd
+*.vpd
+
+# Python / Scripting Intermediates
+__pycache__/
+*.py[cod]
+
+# LaTeX Build Intermediates (LaTeX generated files)
+*.aux
+*.bbl
+*.bcf
+*.blg
+*.dvi
+*.fdb_latexmk
+*.fls
+*.idx
+*.ilg
+*.ind
+*.lof
+*.lot
+*.nav
+*.run.xml
+*.snm
+*.synctex(busy)
+*.synctex.gz
+*.toc
+report/*.aux
+report/*.bbl
+report/*.bcf
+report/*.blg
+report/*.fdb_latexmk
+report/*.fls
+report/*.idx
+report/*.ilg
+report/*.ind
+report/*.lof
+report/*.lot
+report/*.nav
+report/*.out
+report/*.run.xml
+report/*.snm
+report/*.synctex.gz
+report/*.toc
+
+# Explicit Whitelists:
+# Allow tracking the final report PDF and curated demo evidence / waveforms
+!report/*.pdf
+!docs/evidence/**
+!demo/**
+
