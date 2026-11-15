@@ -1,0 +1,22 @@
+// ==============================================================================
+// Trace A: 5-Access Conflict Trace (Set 0 thrashing evaluation)
+// Evaluates conflict miss behavior when multiple distinct addresses map to
+// the exact same cache set (Set 0).
+//
+// Address Breakdown:
+//   Address      2-Way [5:4] (Tag [31:6])    Direct [6:4] (Tag [31:7])
+//   0x00000000   Set 0 (Tag 0x0000000)       Set 0 (Tag 0x0000000)
+//   0x00000080   Set 0 (Tag 0x0000002)       Set 0 (Tag 0x0000001)
+//   0x00000000   Set 0 (Tag 0x0000000)       Set 0 (Tag 0x0000000)
+//   0x00000100   Set 0 (Tag 0x0000004)       Set 0 (Tag 0x0000002)
+//   0x00000000   Set 0 (Tag 0x0000000)       Set 0 (Tag 0x0000000)
+//
+// Expected Outcomes:
+//   2-Way Set-Associative: Miss, Miss, HIT, Miss, HIT (2/5 = 40% hit rate)
+//   Direct-Mapped Baseline: Miss, Miss, Miss, Miss, Miss (0/5 = 0% hit rate)
+// ==============================================================================
+00000000
+00000080
+00000000
+00000100
+00000000
