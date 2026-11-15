@@ -1,0 +1,104 @@
+==================================================================
+Checking prerequisites...
+==================================================================
+  iverilog: Icarus Verilog version 13.0 (stable) (v13_0)
+  Found: rtl/cache_2way.v
+  Found: rtl/cache_2way_store.v
+  Found: rtl/cache_direct.v
+  Found: tb/mem_block_model.v
+  Found: tb/tb_cache_compare.sv
+
+==================================================================
+Compiling tb_cache_compare with iverilog -g2012...
+==================================================================
+rtl/cache_direct.v:78: warning: @* is sensitive to all 8 words in array 'data'.
+rtl/cache_direct.v:79: warning: @* is sensitive to all 8 words in array 'data'.
+rtl/cache_direct.v:80: warning: @* is sensitive to all 8 words in array 'data'.
+rtl/cache_direct.v:81: warning: @* is sensitive to all 8 words in array 'data'.
+Compilation successful.
+
+==================================================================
+Running comparative simulation...
+==================================================================
+==================================================================
+Starting Comparative Verification: cache_2way vs cache_direct
+==================================================================
+
+--- TRACE A: Conflict Trace ---
+    Addresses: 0x000, 0x080, 0x000, 0x100, 0x000
+    All map to Set 0 in both designs.
+    [PASS] A.1 addr=0x00000000 2way hit
+    [PASS] A.1 addr=0x00000000 2way data
+    [PASS] A.1 addr=0x00000000 direct hit
+    [PASS] A.1 addr=0x00000000 direct data
+    [PASS] A.2 addr=0x00000080 2way hit
+    [PASS] A.2 addr=0x00000080 2way data
+    [PASS] A.2 addr=0x00000080 direct hit
+    [PASS] A.2 addr=0x00000080 direct data
+    [PASS] A.3 addr=0x00000000 2way hit
+    [PASS] A.3 addr=0x00000000 2way data
+    [PASS] A.3 addr=0x00000000 direct hit
+    [PASS] A.3 addr=0x00000000 direct data
+    [PASS] A.4 addr=0x00000100 2way hit
+    [PASS] A.4 addr=0x00000100 2way data
+    [PASS] A.4 addr=0x00000100 direct hit
+    [PASS] A.4 addr=0x00000100 direct data
+    [PASS] A.5 addr=0x00000000 2way hit
+    [PASS] A.5 addr=0x00000000 2way data
+    [PASS] A.5 addr=0x00000000 direct hit
+    [PASS] A.5 addr=0x00000000 direct data
+
+  TRACE A Summary:
+    2-Way  : 2 hits / 5 accesses = 40% hit rate
+    Direct : 0 hits / 5 accesses = 0% hit rate
+    [PASS] TRACE A: 2way hits == 2
+    [PASS] TRACE A: 2way misses == 3
+    [PASS] TRACE A: direct hits == 0
+    [PASS] TRACE A: direct misses == 5
+
+--- TRACE B: Within-Block Locality Trace ---
+    Addresses: 0x040, 0x044, 0x048, 0x04C, 0x0C0, 0x0C4
+    0x040: 2way set=0, direct set=2
+    0x0C0: 2way set=0, direct set=4 (different set in direct)
+    Expected both: Miss Hit Hit Hit Miss Hit => 4/6 = 67%
+    [PASS] B.1 addr=0x00000040 2way hit
+    [PASS] B.1 addr=0x00000040 2way data
+    [PASS] B.1 addr=0x00000040 direct hit
+    [PASS] B.1 addr=0x00000040 direct data
+    [PASS] B.2 addr=0x00000044 2way hit
+    [PASS] B.2 addr=0x00000044 2way data
+    [PASS] B.2 addr=0x00000044 direct hit
+    [PASS] B.2 addr=0x00000044 direct data
+    [PASS] B.3 addr=0x00000048 2way hit
+    [PASS] B.3 addr=0x00000048 2way data
+    [PASS] B.3 addr=0x00000048 direct hit
+    [PASS] B.3 addr=0x00000048 direct data
+    [PASS] B.4 addr=0x0000004C 2way hit
+    [PASS] B.4 addr=0x0000004C 2way data
+    [PASS] B.4 addr=0x0000004C direct hit
+    [PASS] B.4 addr=0x0000004C direct data
+    [PASS] B.5 addr=0x000000C0 2way hit
+    [PASS] B.5 addr=0x000000C0 2way data
+    [PASS] B.5 addr=0x000000C0 direct hit
+    [PASS] B.5 addr=0x000000C0 direct data
+    [PASS] B.6 addr=0x000000C4 2way hit
+    [PASS] B.6 addr=0x000000C4 2way data
+    [PASS] B.6 addr=0x000000C4 direct hit
+    [PASS] B.6 addr=0x000000C4 direct data
+
+  TRACE B Summary:
+    2-Way  : 4 hits / 6 accesses = 66% hit rate
+    Direct : 4 hits / 6 accesses = 66% hit rate
+    [PASS] TRACE B: 2way hits == 4
+    [PASS] TRACE B: 2way misses == 2
+    [PASS] TRACE B: direct hits == 4
+    [PASS] TRACE B: direct misses == 2
+
+==================================================================
+Comparative Verification Complete: 52 Passed, 0 Failed
+==================================================================
+TEST RESULT: ALL 52 CHECKS PASSED SUCCESSFULLY
+
+==================================================================
+run_cache_compare.sh: ALL CHECKS PASSED (exit 0)
+==================================================================

@@ -317,3 +317,131 @@ This log tracks all architectural work, implementation milestones, code modifica
   - Single outstanding request: The controller processes one request at a time (`req_ready = 0` while busy).
   - Combinational lower memory model in Phase I (no memory wait states).
 - **Next Member**: **Prachee** (Direct-Mapped Cache Baseline: `rtl/cache_direct.v` following `docs/interface.md#4` and reusing `tb/mem_block_model.v`).
+
+
+---
+
+## Entry 4: Direct-Mapped Cache Baseline, Comparative Testbench, and Verified Conflict/Locality Evidence
+
+- **Date**: 2026-11-15
+- **Member**: **Prachee (comparison)**
+- **Module Locations**:
+  - `rtl/cache_direct.v`
+  - `tb/tb_cache_direct.sv`
+  - `tb/tb_cache_compare.sv`
+  - `tb/traces/conflict_trace.hex`
+  - `tb/traces/locality_trace.hex`
+  - `scripts/run_cache_direct_test.sh`
+  - `scripts/run_cache_compare.sh`
+  - `docs/evidence/cache_comparison_evidence.md`
+  - `docs/evidence/cache_comparison_sim.log`
+- **Work Completed**:
+  - Implemented synthesizable Verilog-2001 direct-mapped baseline module `rtl/cache_direct.v` strictly conforming to the public interface in `docs/interface.md#4` and `PROJECT_BRIEF.md#4.4`:
+    - Geometry: 128 bytes total capacity, 8 sets x 1 way x 16 bytes/block.
+    - 32-bit address decomposition: `addr[31:7]` (25-bit tag), `addr[6:4]` (3-bit set index -> 8 sets), `addr[3:2]` (2-bit word select -> 4 words), `addr[1:0]` (2-bit byte offset).
+    - Valid bit array (`valid[7:0]`), tag memory array (`tag[0:7]`), and block data memory array (`data[0:7]`).
+    - Combinational tag comparison, dual-path word selection (cached hit word mux vs incoming refill word mux).
+    - 4-state controller FSM (`STATE_IDLE`, `STATE_LOOKUP`, `STATE_REFILL`, `STATE_RESP`) enforcing single outstanding request protocol, bus isolation on latched address, and exact 1-cycle `resp_valid` pulse.
+  - Implemented self-checking integration testbench `tb/tb_cache_direct.sv` (30 passing assertions):
+    - Synchronous reset and handshake protocol.
+    - Standard 5-request conflict trace (all accesses mapping to Set 0 yielding 0% hit rate due to compulsory and conflict thrashing).
+    - Multi-word selection across all 4 offsets and spatial hit validation.
+    - Post-acceptance address bus mutation immunity.
+    - Zero spurious responses during idle cycles.
+    - Synchronous reset cache invalidation.
+  - Implemented shared self-checking dual-cache comparison testbench `tb/tb_cache_compare.sv` (52 passing assertions):
+    - Concurrent instantiation of `cache_2way` and `cache_direct`, each connected to an independent instance of `mem_block_model`.
+    - Feeds both designs the exact same ordered request stream, accommodating independent ready and response timings.
+    - Accepts each request exactly once per design and counts each response exactly once.
+    - Verified Trace A (5-access Set 0 conflict trace): `cache_2way` achieves **2 hits / 5 accesses (40% hit rate)**; `cache_direct` achieves **0 hits / 5 accesses (0% hit rate)**.
+    - Verified Trace B (6-access within-block spatial locality trace): both designs achieve **4 hits / 6 accesses (66.7% hit rate)** through multi-word block reuse.
+    - Fully asserts returned 32-bit data words match `mem_block_model` on both hits and misses.
+    - Includes per-trace hit/miss counters, timeout enforcement, and non-zero exit code on mismatch.
+  - Created checked-in trace definitions `tb/traces/conflict_trace.hex` and `tb/traces/locality_trace.hex`.
+  - Authored portable runners `scripts/run_cache_direct_test.sh` and `scripts/run_cache_compare.sh`.
+  - Authored comprehensive empirical evidence report in `docs/evidence/cache_comparison_evidence.md`:
+    - Tabulated actual simulation results for Trace A and Trace B.
+    - Bitfield address mapping analysis across both architectures.
+    - Architectural explanation detailing why Request 3 (`0x00`) asserts `touch_en` to flip Set 0's LRU victim pointer from Way 0 to Way 1, preserving `0x00` during Request 4's refill and enabling Request 5's cache hit.
+    - Explanation of why the conflict trace hit rate applies to this trace.
+    - Curated list of useful waveform signals for inspection in GTKWave.
+  - Updated documentation in `tb/README.md` and `scripts/README.md`.
+  - Executed staged review and created three substantive commits:
+    1. Commit 1 (`fd3d8d7`): "Implement equal-capacity direct-mapped cache baseline" (`rtl/cache_direct.v`, `scripts/run_cache_direct_test.sh`, `tb/tb_cache_direct.sv`)
+    2. Commit 2 (`7188fc6`): "Compare both cache designs on identical access traces" (`scripts/run_cache_compare.sh`, `tb/tb_cache_compare.sv`, `tb/traces/conflict_trace.hex`, `tb/traces/locality_trace.hex`)
+    3. Commit 3: "Record verified conflict and locality comparison evidence" (`docs/evidence/cache_comparison_evidence.md`, `docs/evidence/cache_comparison_sim.log`, `tb/README.md`, `scripts/README.md`, `HANDOFF.md`)
+- **Changed Files**:
+  - `rtl/cache_direct.v`
+  - `tb/tb_cache_direct.sv`
+  - `tb/tb_cache_compare.sv`
+  - `tb/traces/conflict_trace.hex`
+  - `tb/traces/locality_trace.hex`
+  - `scripts/run_cache_direct_test.sh`
+  - `scripts/run_cache_compare.sh`
+  - `docs/evidence/cache_comparison_evidence.md`
+  - `docs/evidence/cache_comparison_sim.log`
+  - `tb/README.md`
+  - `scripts/README.md`
+  - `HANDOFF.md`
+- **Reproduction Steps for Kushal (Round 2) / Team**:
+  ```bash
+  # Ensure in repository root
+  cd MCA-Project7-Team-5-1-MUX
+
+  # 1. Run direct-mapped cache unit & integration test:
+  ./scripts/run_cache_direct_test.sh
+
+  # 2. Run shared comparison trace testbench:
+  ./scripts/run_cache_compare.sh
+
+  # 3. Full project regression suite:
+  ./scripts/run_store_unit_test.sh
+  ./scripts/run_cache_2way_integration_test.sh
+  ./scripts/run_cache_direct_test.sh
+  ./scripts/run_cache_compare.sh
+  ```
+- **Checks Actually Run**:
+  - `iverilog -g2001 -Wall -s cache_direct rtl/cache_direct.v`: Verilog-2001 syntax check clean (0 errors).
+  - `./scripts/run_store_unit_test.sh`: 51 passed, 0 failed.
+  - `./scripts/run_cache_2way_integration_test.sh`: 141 passed, 0 failed.
+  - `./scripts/run_cache_direct_test.sh`: 30 passed, 0 failed.
+  - `./scripts/run_cache_compare.sh`: 52 passed, 0 failed.
+  - Total assertions verified passing: **274 passed, 0 failed**.
+- **Observed Results (Comparative Benchmark Summary)**:
+  ```
+  ==================================================================
+  Starting Comparative Verification: cache_2way vs cache_direct
+  ==================================================================
+
+  --- TRACE A: Conflict Trace ---
+      Addresses: 0x000, 0x080, 0x000, 0x100, 0x000
+      All map to Set 0 in both designs.
+
+    TRACE A Summary:
+      2-Way  : 2 hits / 5 accesses = 40% hit rate
+      Direct : 0 hits / 5 accesses = 0% hit rate
+
+  --- TRACE B: Within-Block Locality Trace ---
+      Addresses: 0x040, 0x044, 0x048, 0x04C, 0x0C0, 0x0C4
+      0x040: 2way set=0, direct set=2
+      0x0C0: 2way set=0, direct set=4 (different set in direct)
+      Expected both: Miss Hit Hit Hit Miss Hit => 4/6 = 67%
+
+    TRACE B Summary:
+      2-Way  : 4 hits / 6 accesses = 66% hit rate
+      Direct : 4 hits / 6 accesses = 66% hit rate
+
+  ==================================================================
+  Comparative Verification Complete: 52 Passed, 0 Failed
+  ==================================================================
+  TEST RESULT: ALL 52 CHECKS PASSED SUCCESSFULLY
+  ```
+- **Useful Waveform Signals for Debug & Inspection**:
+  - Handshake: `tw_req_valid`, `tw_req_ready`, `tw_req_addr`, `tw_resp_valid`, `tw_resp_hit`, `tw_resp_data`
+  - 2-Way Storage: `u_2way.u_store.way0_match`, `way1_match`, `hit`, `victim_way`, `lru_bit[0]`, `touch_en`, `fill_en`
+  - Direct Array: `u_direct.tag_match`, `u_direct.valid[7:0]`, `u_direct.tag[0]`, `u_direct.set_idx`
+  - Memory: `tw_mem_block_addr`, `tw_mem_block_data`
+- **Known Limitations**:
+  - Single outstanding transaction handshake (no pipelining).
+  - Combinational block-memory model without variable DRAM access latency.
+- **Next Member**: **Kushal (verification)** (Round 2: `tb/` testbenches, comparative simulation scripts in `scripts/`).
