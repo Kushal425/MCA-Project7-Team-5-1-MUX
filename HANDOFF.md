@@ -185,3 +185,135 @@ This log tracks all architectural work, implementation milestones, code modifica
 - **Known Limitations**:
   - Control invariant: The top-level cache controller must never assert `touch_en` and `fill_en` concurrently in the same clock cycle.
 - **Next Member**: **Apoorva** (Top-level cache controller FSM & memory refill integration: `rtl/cache_2way.v` following `docs/interface.md#4`).
+
+
+---
+
+## Entry 3: Top-Level Two-Way Cache Controller, Refill Integration, and Memory Verification Model
+
+- **Date**: 2026-11-15
+- **Member**: **Apoorva (controller)**
+- **Module Location**: `rtl/cache_2way.v`
+- **Work Completed**:
+  - Implemented top-level synthesizable Verilog-2001 module `rtl/cache_2way.v` strictly conforming to the public interface defined in `docs/interface.md#4` and `PROJECT_BRIEF.md#4.4`.
+  - Instantiated Krishna's `cache_2way_store` submodule, wiring up address lookup, parallel tag matching, LRU updates, and refill datapath.
+  - Implemented 4-state controller FSM (`STATE_IDLE`, `STATE_LOOKUP`, `STATE_REFILL`, `STATE_RESP`):
+    - Handshake logic: Latches `req_addr` into `saved_addr` upon `req_valid && req_ready` at clock rising edge.
+    - Busy isolation: Deasserts `req_ready` to `0` throughout the transaction to enforce the single outstanding request protocol. Changing `req_addr` while busy has zero impact on in-flight operations.
+    - Hit path (`STATE_LOOKUP`): Asserts `touch_en = 1` for exactly 1 cycle on hit to update LRU recency, selects `store_read_word`, and registers response (`resp_valid = 1`, `resp_hit = 1`, `resp_data = store_read_word`).
+    - Miss path (`STATE_REFILL`): Drives 16-byte aligned refill address `mem_block_addr = {saved_addr[31:4], 4'b0000}`, asserts `fill_en = 1` for exactly 1 cycle to write the incoming 128-bit `mem_block_data` into the victim way and update LRU, and registers response (`resp_valid = 1`, `resp_hit = 0`, `resp_data = refill_word`).
+    - True classification preservation: Preserves the original `resp_hit = 0` classification for misses, even though the cache is refilled before response delivery.
+    - Response timing (`STATE_RESP`): Generates an exact 1-cycle pulse of `resp_valid = 1`, returning to `STATE_IDLE` where `req_ready` re-asserts to accept the next request.
+    - Synchronous reset: Active-high `rst` forces FSM to `STATE_IDLE`, resets `saved_addr`, and deasserts both `req_ready` and `resp_valid` to `0`.
+  - Authored reusable combinational block-memory model `tb/mem_block_model.v` implementing the deterministic memory contract $\text{Memory}[\text{word\_addr}] = \text{word\_addr}$, ready for direct reuse by Prachee for `cache_direct`.
+  - Authored self-checking integration testbench `tb/tb_cache_2way.sv` (141 assertions) verifying:
+    1. Synchronous reset and handshake protocol.
+    2. The standard 5-request demo sequence (`0x00`, `0x80`, `0x00`, `0x100`, `0x00`) reproducing the predicted 40% hit rate (2 hits, 3 misses).
+    3. Returned data integrity across all word offsets (Word 0, 1, 2, 3) and sets (Set 0, 1, 2, 3) on both cold misses and spatial hits.
+    4. Request-address mutation resilience (changing `req_addr` to `0xFFFFFFFF` or arbitrary values after acceptance does not affect transactions).
+    5. Exact single-cycle `resp_valid` pulse delivery and zero phantom responses during idle cycles.
+    6. Post-reset cold cache behavior and watchdog timeout protection.
+  - Authored portable test runner script `scripts/run_cache_2way_integration_test.sh`.
+  - Authored comprehensive architectural block diagrams, Mermaid flowcharts, and FSM documentation in `docs/architecture.md`.
+  - Updated `scripts/README.md` and `tb/README.md`.
+  - Executed staged review and created three substantive commits:
+    1. Commit 1 (`7c777f7`): "Integrate request controller and two-way cache refill" (`rtl/cache_2way.v`)
+    2. Commit 2 (`ba299cf`): "Verify cache transactions against deterministic block memory" (`tb/mem_block_model.v`, `tb/tb_cache_2way.sv`)
+    3. Commit 3: "Document cache datapath and integration demo" (`docs/architecture.md`, `scripts/run_cache_2way_integration_test.sh`, `scripts/README.md`, `tb/README.md`, `HANDOFF.md`)
+- **Changed Files**:
+  - `rtl/cache_2way.v`
+  - `tb/mem_block_model.v`
+  - `tb/tb_cache_2way.sv`
+  - `scripts/run_cache_2way_integration_test.sh`
+  - `docs/architecture.md`
+  - `scripts/README.md`
+  - `tb/README.md`
+  - `HANDOFF.md`
+- **Location of Reusable Memory Model for Prachee**:
+  - Path: `tb/mem_block_model.v`
+  - Interface:
+    ```verilog
+    module mem_block_model (
+        input  wire [31:0]  mem_block_addr,
+        output wire [127:0] mem_block_data
+    );
+    ```
+  - Behavior: Purely combinational. Given 16-byte aligned base address `mem_block_addr`, reflects 128-bit data packed with each 32-bit word equal to its own byte address. Prachee can instantiate this directly in `tb_cache_direct.sv` without re-implementing memory logic.
+- **Reproduction Steps for Prachee / Team**:
+  ```bash
+  # Ensure in repository root
+  cd MCA-Project7-Team-5-1-MUX
+
+  # 1. Run Krishna's unit tests:
+  ./scripts/run_store_unit_test.sh
+
+  # 2. Run Apoorva's integration tests:
+  ./scripts/run_cache_2way_integration_test.sh
+
+  # Alternatively, manual iverilog invocation:
+  iverilog -g2012 -Wall -s tb_cache_2way -o sim_cache_2way.vvp \
+      rtl/cache_2way.v rtl/cache_2way_store.v tb/mem_block_model.v tb/tb_cache_2way.sv
+  vvp sim_cache_2way.vvp
+  rm -f sim_cache_2way.vvp
+  ```
+- **Checks Actually Run**:
+  - `iverilog -Wall -g2001 -s cache_2way rtl/cache_2way.v rtl/cache_2way_store.v`: Verilog-2001 synthesizability check clean with 0 warnings.
+  - `./scripts/run_store_unit_test.sh`: Full execution of 51 store assertions (51 passed, 0 failed).
+  - `./scripts/run_cache_2way_integration_test.sh`: Full execution of 141 integration assertions (141 passed, 0 failed).
+  - Combined suite total: 192 passed, 0 failed.
+- **Observed Results (Integration Test Summary)**:
+  ```
+  ==================================================================
+  Starting Integration Verification: cache_2way & mem_block_model
+  ==================================================================
+
+  --- Test 1: Reset & Protocol Invariants ---
+    [PASS] req_ready deasserted during reset
+    [PASS] resp_valid deasserted during reset
+    [PASS] req_ready asserted in IDLE after reset
+    [PASS] resp_valid remains 0 in IDLE
+
+  --- Test 2: Standard 5-Request Benchmark Demo Trace ---
+    [PASS] Demo Req 1 (0x00000000): req_ready must be low while busy
+    [PASS] Demo Req 1 (0x00000000): hit outcome (exp=0, got=0)
+    [PASS] Demo Req 1 (0x00000000): returned data (exp=0x00000000, got=0x00000000)
+    [PASS] Demo Req 2 (0x00000080): hit outcome (exp=0, got=0)
+    [PASS] Demo Req 2 (0x00000080): returned data (exp=0x00000080, got=0x00000080)
+    [PASS] Demo Req 3 (0x00000000): hit outcome (exp=1, got=1)
+    [PASS] Demo Req 3 (0x00000000): returned data (exp=0x00000000, got=0x00000000)
+    [PASS] Demo Req 4 (0x00000100): hit outcome (exp=0, got=0)
+    [PASS] Demo Req 4 (0x00000100): returned data (exp=0x00000100, got=0x00000100)
+    [PASS] Demo Req 5 (0x00000000): hit outcome (exp=1, got=1)
+    [PASS] Demo Req 5 (0x00000000): returned data (exp=0x00000000, got=0x00000000)
+
+  --- Test 3: Nonzero Word Offsets & Spatial Locality ---
+    [PASS] Set 0 Block 0x40 Word 0 (Miss)
+    [PASS] Set 0 Block 0x40 Word 1 (Hit)
+    [PASS] Set 0 Block 0x40 Word 2 (Hit)
+    [PASS] Set 0 Block 0x40 Word 3 (Hit)
+    [PASS] Set 1 Word 2 Cold Miss (0x18)
+    [PASS] Set 1 Word 2 Subsequent Hit (0x18)
+    [PASS] Set 2 Word 3 Cold Miss (0x2C)
+    [PASS] Set 2 Word 1 Spatial Hit (0x24)
+    [PASS] Set 3 Word 1 Cold Miss (0x34)
+    [PASS] Set 3 Word 1 Subsequent Hit (0x34)
+
+  --- Test 4: Request-Address Mutation After Acceptance ---
+    [PASS] Miss with req_addr changed to 0xFFFFFFFF (returned uncorrupted 0x00000204)
+    [PASS] Hit with req_addr changed to 0x12345678 (returned uncorrupted 0x00000204)
+
+  --- Test 5: Response Protocol & Idle Stability ---
+    [PASS] 10 idle cycles with 0 spurious responses and continuous req_ready
+
+  --- Test 6: Reset Clears Cache ---
+    [PASS] Post-reset 0x40 is cold Miss
+
+  ==================================================================
+  Integration Verification Complete: 141 Passed, 0 Failed
+  ==================================================================
+  TEST RESULT: ALL 141 CHECKS PASSED SUCCESSFULLY
+  ```
+- **Known Limitations**:
+  - Single outstanding request: The controller processes one request at a time (`req_ready = 0` while busy).
+  - Combinational lower memory model in Phase I (no memory wait states).
+- **Next Member**: **Prachee** (Direct-Mapped Cache Baseline: `rtl/cache_direct.v` following `docs/interface.md#4` and reusing `tb/mem_block_model.v`).
