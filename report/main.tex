@@ -184,14 +184,25 @@ or invalid-slot priority logic.
 \centering
 \small
 \begin{verbatim}
- req_valid/addr --> [Controller FSM] --> resp_valid/hit/data
-                    |     ^
-                    v     |
- [Lower Memory] <-> [cache_2way_store]
-  mem_block_addr      |  Way 0  |  Way 1  |
-  mem_block_data      | Tag CMP | Tag CMP |
-                      | LRU Reg | Victim  |
-                      | Word MUX           |
+    [Processor Master Interface]
+       | req_valid, req_addr
+       v
+     +-------------------------+
+     |     Controller FSM      | -> resp_valid
+     | (IDLE/LOOKUP/FILL/RESP) | -> resp_hit
+     +------------+------------+ -> resp_data
+                  |
+            saved_addr
+                  |
+       +----------+----------+
+       |                     |
+       v                     v
+   +--------+           +-----------+
+   | Lower  |           | cache_2way|
+   | Memory | 128-bit   | _store    |
+   | Refill |---------->| Way0/Way1 |
+   | Port   |           | LRU & MUX |
+   +--------+           +-----------+
 \end{verbatim}
 \caption{Simplified block diagram of \texttt{cache\_2way}.  The controller FSM orchestrates the handshake, lookup, refill, and response phases.}
 \label{fig:block}
@@ -310,7 +321,7 @@ Trace~A demonstrates the conflict-miss advantage of set associativity: the 2-way
     (\texttt{tb/tb\_cache\_direct.sv}), and the 52-assertion comparative
     dual-cache trace harness (\texttt{tb/tb\_cache\_compare.sv}).
     Authored verified comparison evidence
-    (\texttt{docs/evidence/cache\_comparison\_evidence.md}).
+    (\path{docs/evidence/cache_comparison_evidence.md}).
     Commits: \texttt{fd3d8d7}, \texttt{7188fc6}, \texttt{cc045d7}.
 
   \item \textbf{Vani Rudra} (Report and Demo Package, Handoff~5):

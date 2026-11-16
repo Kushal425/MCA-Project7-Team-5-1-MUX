@@ -16,7 +16,7 @@
 | Proposed Solution (Architecture, Controller FSM, LRU mechanics) | Lines 110–218 of `main.tex`; address field diagram, block diagram, FSM states, worked LRU example | ✅ |
 | Individual Contributions | Lines 237–279 of `main.tex`; grounded in actual commit hashes and handoff entries | ✅ |
 | References | 9 IEEE numeric citations (BibTeX) including Patterson & Hennessy, Smith, Hill, Jouppi, Przybylski, Al-Zoubi, IEEE Verilog standard, Icarus Verilog | ✅ |
-| Compiled PDF (`report/phase1-report.pdf`) | `pdflatex` not available on build machine; source is Overleaf-ready | ⏳ **Pending** — compile via Overleaf or local LaTeX |
+| Compiled PDF (`report/phase1-report.pdf`) | Compiled via `tectonic` and tracked in Git | ✅ Compiled & Tracked |
 | Compilation instructions | [`report/BUILD.md`](../report/BUILD.md) | ✅ |
 
 ---
@@ -66,9 +66,8 @@ All five team members have authentic, individual Git contributions with distinct
 
 | # | Action | Owner | Deadline |
 |:---:|:---|:---|:---|
-| 1 | **Compile report PDF**: Upload `report/main.tex` and `report/refs.bib` to Overleaf, compile, download `phase1-report.pdf`, commit to `report/` | Any member | Nov 16, 2026 11:59 PM IST |
-| 2 | **Record demo video**: Follow `demo/recording-script.md`, record ~4:30 video, upload to YouTube/Drive | Vani + team | Nov 16, 2026 11:59 PM IST |
-| 3 | **Add video link**: Update `demo/README.md` with permanent video URL, commit and push | Vani | Nov 16, 2026 11:59 PM IST |
-| 4 | **Submit course form**: Enter repository URL `https://github.com/Kushal425/MCA-Project7-Team-5-1-MUX.git` in the official course submission form | Any member | Nov 16, 2026 11:59 PM IST |
+| 1 | **Record demo video**: Follow [`demo/recording-script.md`](../demo/recording-script.md), record ~4:30 video, upload to YouTube/Drive | Vani + team | Nov 16, 2026 11:59 PM IST |
+| 2 | **Add video link**: Update [`demo/README.md`](../demo/README.md) with permanent video URL, commit and push | Vani | Nov 16, 2026 11:59 PM IST |
+| 3 | **Submit course form**: Enter repository URL `https://github.com/Kushal425/MCA-Project7-Team-5-1-MUX.git` in the official course submission form | Any member | Nov 16, 2026 11:59 PM IST |
 
 > **Phase I is NOT yet submitted** — course-form submission has not been confirmed.

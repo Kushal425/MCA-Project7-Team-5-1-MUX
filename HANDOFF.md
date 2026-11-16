@@ -564,18 +564,16 @@ This log tracks all architectural work, implementation milestones, code modifica
   - `git log --format='%h %an <%ae> %s' --all`: Verified all 15 prior commits with authentic Git identities for Kushal (6 commits), Krishna (3), Apoorva (3), and Prachee (3).
   - `git status`: Confirmed clean working tree before starting.
   - `git fetch origin`: Synchronized with `origin/main` (`fdb01a1`).
-  - `which pdflatex`: Confirmed `pdflatex` not available; marked PDF pending.
+  - `tectonic main.tex -o . && cp main.pdf phase1-report.pdf`: Compiled clean two-column IEEE conference paper `report/phase1-report.pdf` (54 KB) with zero overfull hbox warnings and fully resolved BibTeX citations.
   - Repository tree listing: Verified all required RTL, testbench, script, evidence, and documentation files present.
   - Verified `report/main.tex` uses `\documentclass[conference]{IEEEtran}` with correct sections.
   - Verified all 9 BibTeX references are real publications with verifiable DOIs or URLs.
   - Verified `demo/recording-script.md` totals 4:30 across 6 timed segments.
   - Verified `docs/phase1-submission.md` maps all rubric items with honest statuses.
 - **Known Limitations**:
-  - Report PDF not compiled — requires `pdflatex` + `bibtex` or Overleaf.
   - Demo video not recorded — script and checklist provided for team recording.
   - Course-form submission not confirmed — URL and deadline documented.
 - **Next Actions (Human)**:
-  1. Compile `report/phase1-report.pdf` via Overleaf (upload `main.tex` + `refs.bib`).
-  2. Record demo video following `demo/recording-script.md` (~4:30).
-  3. Upload video and add link to `demo/README.md`.
-  4. Submit repository URL via official course form before November 16, 2026, 11:59 PM IST.
+  1. Record demo video following `demo/recording-script.md` (~4:30).
+  2. Upload video and add link to `demo/README.md`.
+  3. Submit repository URL via official course form before November 16, 2026, 11:59 PM IST.

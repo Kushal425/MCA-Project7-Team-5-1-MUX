@@ -35,7 +35,7 @@ Both cache models are written in synthesizable Verilog-2001, targeting an FPGA-f
 | Deliverable | Location | Status |
 | :--- | :--- | :---: |
 | IEEE Report (LaTeX source) | [`report/main.tex`](report/main.tex), [`report/refs.bib`](report/refs.bib) | ✅ Overleaf-ready |
-| Report PDF | `report/phase1-report.pdf` | ⏳ Compile pending |
+| Report PDF | [`report/phase1-report.pdf`](report/phase1-report.pdf) | ✅ Compiled & Tracked |
 | Demo Recording Script | [`demo/recording-script.md`](demo/recording-script.md) | ✅ |
 | Demo Video | [`demo/README.md`](demo/README.md) | ⏳ Recording pending |
 | Submission Checklist | [`docs/phase1-submission.md`](docs/phase1-submission.md) | ✅ |
