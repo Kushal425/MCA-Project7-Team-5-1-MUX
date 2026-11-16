@@ -1,145 +1,182 @@
-# Phase I Prototype Demonstration — Recording Script
+# Phase I Prototype Demonstration — 5-Member Recording Script
 
-**Project**: 2-Way Set-Associative Cache with LRU Replacement (MCA Project 7)  
-**Target Duration**: 4 minutes 30 seconds (maximum 5:00 allowed)  
-**Team**: Krishna Pramod Dubale, Apoorva Choudhary, Prachee Dhar, Kushal Sarkar, Vani Rudra
-
----
-
-## Pre-Recording Setup Checklist
-
-Complete these steps **before** pressing Record:
-
-1. **Terminal**: Open a terminal at the repository root (`MCA-Project7-Team-5-1-MUX/`).
-2. **Verify toolchain**: Run `iverilog -V 2>&1 | head -1` to confirm Icarus Verilog is installed.
-3. **Pre-run verification**: Execute `./scripts/run_all.sh` once to confirm all 618 assertions pass. Leave the terminal output visible.
-4. **GTKWave**: Open the demo waveform:
-   ```bash
-   gtkwave docs/evidence/cache_2way_demo.vcd
-   ```
-   Pre-load the following signals (see `docs/evidence/demo_waveform_evidence.md` for exact hierarchical paths):
-   - `clk`, `rst`, `req_valid`, `req_ready`, `req_addr`, `state`
-   - `resp_valid`, `resp_hit`, `resp_data`
-   - `u_store.way0_match`, `u_store.way1_match`, `u_store.hit`
-   - `u_store.touch_en`, `u_store.fill_en`, `u_store.victim_way`
-   - `u_store.lru_bit[0]`
-
-   Zoom the time axis to 0–220 ns.
-5. **Editor/Browser**: Have `docs/architecture.md` open (for the block diagram), and `docs/evidence/cache_comparison_evidence.md` (for the comparison table).
-6. **Screen recording**: Use OBS, QuickTime, or Zoom screen share recording. Set resolution to 1080p minimum.
+**Project**: Modern Computer Architecture (MCA) — Project 7: 2-Way Set-Associative Cache with LRU  
+**Total Target Duration**: 4 minutes 30 seconds (maximum allowed: 5:00)  
+**Team Members**:
+1. **Kushal Sarkar** (Scaffold, System Verification & Master Regression)
+2. **Krishna Pramod Dubale** (Storage Submodule, Parallel Tag Matching & LRU Datapath)
+3. **Apoorva Choudhary** (Top-Level Controller FSM & Memory Refill Datapath)
+4. **Prachee Dhar** (Direct-Mapped Baseline & Comparative Benchmark Analysis)
+5. **Vani Rudra** (Live Simulation, Waveform Evidence, IEEE Report & Wrap-up)
 
 ---
 
-## Recording Script
+## 1. Quick Member Allocation & Timing Summary
 
-### Segment 1: Title and Team Introduction (0:00 – 0:45)
-
-**Screen**: Title slide or the repository `README.md` open in a browser/editor showing the team table.
-
-> **Vani** (spoken):
-> *"Hello, and welcome to the Phase I prototype demonstration for Project 7: a 2-Way Set-Associative Cache with LRU Replacement, developed for the Modern Computer Architecture course.*
->
-> *Our team consists of five members. I'm Vani Rudra, and I'll be narrating this demonstration. Our team members are:*
-> - *Krishna Pramod Dubale, who implemented the storage submodule with parallel tag matching and per-set LRU tracking.*
-> - *Apoorva Choudhary, who built the top-level cache controller FSM and memory refill integration.*
-> - *Prachee Dhar, who implemented the direct-mapped cache baseline and authored the comparative evaluation.*
-> - *Kushal Sarkar, who scaffolded the repository architecture and built the full system regression and verification suite.*
-> - *And myself, Vani Rudra, responsible for the IEEE report, this demonstration, and submission packaging."*
+| Speaker | Member Name | Role & Topic | Allotted Time | Cumulative Time |
+| :---: | :--- | :--- | :---: | :---: |
+| **1** | **Kushal Sarkar** | Project Title, Introduces All 5 Names, Motivation & Address Partitioning | ~50 sec | 0:00 – 0:50 |
+| **2** | **Krishna Pramod Dubale** | Storage Submodule, Dual-Way Arrays, Parallel Tag Matching & LRU Datapath | ~50 sec | 0:50 – 1:40 |
+| **3** | **Apoorva Choudhary** | Cache Controller FSM (4 States), Request Handshake & Memory Refill | ~50 sec | 1:40 – 2:30 |
+| **4** | **Prachee Dhar** | Direct-Mapped Baseline & Trace Comparison (40% vs 0% Conflict Hit Rate) | ~55 sec | 2:30 – 3:25 |
+| **5** | **Vani Rudra** | Live Regression Run (`run_all.sh`), GTKWave Waveform Walkthrough & Wrap-up | ~65 sec | 3:25 – 4:30 |
+| **Total** | | | **4:30** | *(Well under 5:00 max)* |
 
 ---
 
-### Segment 2: Project Motivation and Architecture (0:45 – 1:30)
+## 2. Pre-Recording Setup: Windows to Open on Screen
 
-**Screen**: Switch to `docs/architecture.md` showing the address field diagram and the top-level block diagram.
+Before hitting record, have these 4 windows open and ready to switch between (using `Cmd + Tab`):
 
-> **Vani** (spoken):
-> *"The goal of this project is to implement a synthesizable 2-way set-associative cache and compare it against a direct-mapped cache of equal capacity — both holding 128 bytes of data.*
->
-> *Here you can see the address field decomposition. A 32-bit byte address is split into a 26-bit tag, a 2-bit set index selecting one of 4 sets, a 2-bit word select for choosing among 4 words in a 16-byte block, and 2 byte-offset bits.*
->
-> *The block diagram shows the top-level datapath. The controller FSM accepts a request, latches the address, and queries the cache_2way_store submodule. This submodule performs parallel tag comparison on both ways simultaneously. On a hit, it returns the cached word. On a miss, the controller fetches a 128-bit block from lower memory and fills the victim way — chosen by LRU replacement or invalid-slot priority.*
->
-> *Both the 2-way and direct-mapped caches share an identical external interface: req_valid, req_ready handshake for acceptance, and a one-cycle resp_valid pulse delivering the hit/miss status and data."*
-
----
-
-### Segment 3: Running the Full Verification Suite (1:30 – 2:15)
-
-**Screen**: Terminal at repository root.
-
-> **Vani** (spoken):
-> *"Let's verify that our prototype works. I'll run the master verification command that exercises all five test suites."*
-
-**Action**: Type and execute:
-```bash
-./scripts/run_all.sh
-```
-
-> *"This runs Krishna's 51 storage unit tests, Apoorva's 141 integration tests, Prachee's 30 direct-mapped tests and 52 comparison tests, and Kushal's 344 system regression assertions — a total of 618 automated checks."*
-
-**Wait for output to complete. Point at the summary lines.**
-
-> *"All 618 assertions pass with zero failures. Every test suite reports a clean pass."*
+1. **Window 1 (Browser or Preview)**:
+   - Tab 1: `README.md` showing the **Team Members Table** with all 5 names.
+   - Tab 2: `docs/architecture.md` showing the **Address Field Decomposition** and **Datapath Block Diagram**.
+2. **Window 2 (Code Editor / VS Code)**:
+   - Tab 1: `rtl/cache_2way_store.v` (Storage arrays, comparators, LRU registers).
+   - Tab 2: `rtl/cache_2way.v` (Controller FSM states, refill datapath).
+   - Tab 3: `rtl/cache_direct.v` (Direct-mapped baseline).
+   - Tab 4: `docs/evidence/cache_comparison_evidence.md` (Trace comparison tables).
+3. **Window 3 (Clean Terminal)**:
+   - Working directory at project root: `MCA-Project7-Team-5-1-MUX/`.
+   - Have the command `./scripts/run_all.sh` typed and ready to press Enter.
+4. **Window 4 (GTKWave)**:
+   - Open command: `gtkwave docs/evidence/cache_2way_demo.vcd`.
+   - Add these signals to display:
+     `clk`, `rst`, `req_valid`, `req_ready`, `req_addr`, `state`, `resp_valid`, `resp_hit`, `resp_data`, `u_store.way0_match`, `u_store.way1_match`, `u_store.touch_en`, `u_store.fill_en`, `u_store.victim_way`, `u_store.lru_bit[0]`.
+   - Horizontal zoom set to fit: 0 ns to 220 ns.
 
 ---
 
-### Segment 4: Waveform Walkthrough — Requests 3 and 4 (2:15 – 3:30)
-
-**Screen**: Switch to GTKWave showing `cache_2way_demo.vcd` zoomed to 0–220 ns.
-
-> **Vani** (spoken):
-> *"Now let's examine the 5-request benchmark trace in the waveform viewer. This trace sends addresses 0x00, 0x80, 0x00, 0x100, and 0x00 — all mapping to Set 0 — starting from a cold cache."*
-
-**Action**: Point cursor to Request 1 (t = 35 ns).
-
-> *"Requests 1 and 2 are compulsory cold misses. Request 1 fills 0x00 into Way 0, and Request 2 fills 0x80 into Way 1. After Request 2, the LRU bit drops to 0, marking Way 0 as the next eviction target."*
-
-**Action**: Point cursor to t = 115–125 ns (Request 3).
-
-> *"Here at 115 nanoseconds is the critical moment — Request 3. Address 0x00 hits on Way 0. Watch the touch_en signal assert for one cycle, and see lru_bit flip from 0 to 1 at 125 nanoseconds. This recency update is the key: it marks Way 1 as the LRU candidate instead of Way 0, protecting the 0x00 block."*
-
-**Action**: Point cursor to t = 145–156 ns (Request 4).
-
-> *"On Request 4 at 145 nanoseconds, address 0x100 misses. Because lru_bit is now 1, victim_way points to Way 1. At 156 nanoseconds, fill_en pulses, evicting 0x80 from Way 1 and writing 0x100 in its place. Notice that Way 0 — holding 0x00 — is completely undisturbed."*
-
-**Action**: Point cursor to t = 185–196 ns (Request 5).
-
-> *"Finally, Request 5 re-reads 0x00 at 185 nanoseconds. Because Way 0 was spared by LRU replacement, the cache scores a hit at 196 nanoseconds, delivering resp_hit equals 1 with correct data. This is the payoff of LRU set associativity."*
+## 3. Cue-by-Cue Script for Each Team Member
 
 ---
 
-### Segment 5: Comparative Results (3:30 – 4:10)
+### 🎙️ Speaker 1: Kushal Sarkar (0:00 – 0:50 | ~50 seconds)
+**Topic**: Project Title, Names of All 5 Members, Motivation & Address Partitioning
 
-**Screen**: Switch to `docs/evidence/cache_comparison_evidence.md` or show the comparison table on screen.
+* **What to show on screen:**
+  * `0:00 – 0:25`: Show `README.md` on screen highlighting the Team Table with all 5 names.
+  * `0:25 – 0:50`: Switch to `docs/architecture.md`, pointing to the **Address Field Partitioning** diagram.
 
-> **Vani** (spoken):
-> *"Let's compare the two architectures. On the same conflict trace, the 2-way cache achieves a 40% hit rate — 2 hits out of 5 accesses — while the direct-mapped cache achieves 0%, suffering complete thrashing because every conflicting address overwrites the sole block in Set 0.*
->
-> *On a spatial locality trace accessing consecutive words within a block, both caches achieve an identical 66.7% hit rate, confirming that the performance advantage is purely from associativity and LRU replacement, not from additional capacity.*
->
-> *Our automated verification confirms these results with 618 passing assertions across 5 test suites, with zero failures."*
+* **Spoken Lines:**
+  > *"Hello everyone. Welcome to the Phase I prototype demonstration for Project 7: a Synthesizable 2-Way Set-Associative Cache with LRU Replacement, developed for the Modern Computer Architecture course.*
+  >
+  > *Our group consists of five members:*
+  > 1. *I am **Kushal Sarkar**, responsible for architecture scaffolding and system verification;*
+  > 2. ***Krishna Pramod Dubale**, who implemented the storage arrays and LRU replacement datapath;*
+  > 3. ***Apoorva Choudhary**, who designed the top-level cache controller FSM;*
+  > 4. ***Prachee Dhar**, who implemented our direct-mapped baseline for comparison;*
+  > 5. *And **Vani Rudra**, who compiled our IEEE project report and verification evidence.*
+  >
+  > *Our objective is to design a synthesizable 128-byte cache organized into 4 sets with 2 ways per set and 16-byte blocks. As shown in our address decomposition, a 32-bit address is partitioned into a 26-bit tag, a 2-bit set index, a 2-bit word select, and 2 byte-offset bits. Both designs implement a standardized request-response handshake.*
+  >
+  > *I will now pass over to Krishna to present the storage and LRU datapath."*
 
 ---
 
-### Segment 6: Summary and Closing (4:10 – 4:30)
+### 🎙️ Speaker 2: Krishna Pramod Dubale (0:50 – 1:40 | ~50 seconds)
+**Topic**: Storage Submodule, Dual-Way Arrays, Parallel Tag Comparators & LRU State
 
-**Screen**: Return to `README.md` or a closing slide.
+* **What to show on screen:**
+  * `0:50 – 1:15`: Show `rtl/cache_2way_store.v` in VS Code. Point to `tag_way0`, `tag_way1`, data RAMs, and parallel comparators (`way0_match`, `way1_match`, `hit`).
+  * `1:15 – 1:40`: Scroll down to the victim selection and `lru_bit` assignment logic.
 
-> **Vani** (spoken):
-> *"To summarize: in Phase I, we have delivered a working, fully verified prototype of a 2-way set-associative cache with LRU replacement, alongside a direct-mapped baseline for comparison. All RTL is synthesizable Verilog-2001, all tests pass, and the verified results demonstrate the conflict-miss reduction that set associativity provides.*
->
-> *Thank you for watching. The complete source code, verification evidence, and this report are available in our GitHub repository."*
+* **Spoken Lines:**
+  > *"Thank you, Kushal. I am **Krishna Pramod Dubale**, and I implemented the internal storage submodule, `cache_2way_store.v`.*
+  >
+  > *In this module, each of the 4 sets maintains independent Way 0 and Way 1 data RAMs and tag registers. On every cycle, combinational comparators check both ways in parallel against the incoming tag. If either way matches and is valid, `hit` asserts immediately along with `hit_way`.*
+  >
+  > *For line replacement, we maintain a dedicated 1-bit LRU register per set. Our allocation policy enforces deterministic priority: if Way 0 is empty, it is allocated first; if Way 1 is empty, it is allocated next. When both ways are full, `victim_way` is governed strictly by the set's `lru_bit`.*
+  >
+  > *When a hit occurs, the controller pulses `touch_en`, updating `lru_bit` to point to the other way as the next candidate for eviction. On a refill, `fill_en` writes the incoming block and flips recency away from the newly written way.*
+  >
+  > *This datapath passes all 51 storage unit tests cleanly. I'll now hand over to Apoorva for the controller FSM."*
 
 ---
 
-## Timing Budget Summary
+### 🎙️ Speaker 3: Apoorva Choudhary (1:40 – 2:30 | ~50 seconds)
+**Topic**: Controller FSM (4 States), Request Handshake, Bus Isolation & Memory Refill
 
-| Segment | Content | Duration |
-|:---:|:---|:---:|
-| 1 | Title and team introduction | 0:45 |
-| 2 | Architecture and motivation | 0:45 |
-| 3 | Live verification run | 0:45 |
-| 4 | Waveform walkthrough (Requests 3 & 4) | 1:15 |
-| 5 | Comparative results | 0:40 |
-| 6 | Summary and closing | 0:20 |
-| **Total** | | **4:30** |
+* **What to show on screen:**
+  * `1:40 – 2:05`: Show the Controller FSM state diagram in `docs/architecture.md` (IDLE $\rightarrow$ LOOKUP $\rightarrow$ REFILL $\rightarrow$ RESP).
+  * `2:05 – 2:30`: Switch to `rtl/cache_2way.v` in VS Code. Highlight the `saved_addr` latch register and the handshake logic.
+
+* **Spoken Lines:**
+  > *"Thank you, Krishna. I am **Apoorva Choudhary**, and I implemented the top-level cache controller in `cache_2way.v`.*
+  >
+  > *Our controller coordinates cache transactions using a 4-state Finite State Machine: IDLE, LOOKUP, REFILL, and RESP.*
+  >
+  > *In STATE_IDLE, `req_ready` is high. When a valid request arrives, the controller latches `req_addr` into `saved_addr` and pulls `req_ready` low. This isolates the bus, ensuring that changing the address during processing has zero impact on the in-flight access.*
+  >
+  > *In STATE_LOOKUP, if `cache_2way_store` reports a hit, the FSM pulses `touch_en` for one cycle, latches the cached word, and transitions to RESP. On a miss, it transitions to STATE_REFILL, presents the 16-byte aligned base address to lower memory, and asserts `fill_en` to update the victim way.*
+  >
+  > *Importantly, our FSM preserves authentic miss reporting: `resp_hit` always returns 0 for a miss, even though the cache is refilled before response delivery. Finally, in STATE_RESP, the cache produces an exact 1-cycle pulse of `resp_valid` and returns to IDLE.*
+  >
+  > *Now, Prachee will discuss our direct-mapped baseline and comparative results."*
+
+---
+
+### 🎙️ Speaker 4: Prachee Dhar (2:30 – 3:25 | ~55 seconds)
+**Topic**: Direct-Mapped Baseline, 40% vs 0% Conflict Hit Rate, Spatial Locality Trace
+
+* **What to show on screen:**
+  * `2:30 – 2:50`: Show `rtl/cache_direct.v` in VS Code, highlighting the 8 sets $\times$ 1 way organization.
+  * `2:50 – 3:25`: Switch to `docs/evidence/cache_comparison_evidence.md`, showing the **Trace A (Conflict)** and **Trace B (Locality)** summary tables.
+
+* **Spoken Lines:**
+  > *"Thank you, Apoorva. I am **Prachee Dhar**, and I designed the direct-mapped cache baseline, `cache_direct.v`, and our comparative evaluation suite.*
+  >
+  > *To provide a completely fair comparison, `cache_direct` has the identical 128-byte data capacity and uses the exact same interface ports as our 2-way design, organized as 8 sets of 1 block each.*
+  >
+  > *In our comparative testbench, `tb_cache_compare.sv`, we run both caches side-by-side against identical memory access streams.*
+  >
+  > *In Trace A — an alternating conflict trace on Set 0 — the direct-mapped cache suffers 100% thrashing, achieving **0 hits out of 5 requests (0% hit rate)** because every access overwrites the single resident line.*
+  >
+  > *In contrast, our 2-way cache achieves **2 hits out of 5 (40% hit rate)** by retaining both active lines in the set using LRU replacement.*
+  >
+  > *Under Trace B — accessing consecutive words within a block — both caches achieve an identical **66.7% hit rate**, proving that both exploit spatial locality equally, and that the performance gain in Trace A is purely due to associativity and LRU.*
+  >
+  > *I will now hand over to Vani to demonstrate the live simulation and waveform evidence."*
+
+---
+
+### 🎙️ Speaker 5: Vani Rudra (3:25 – 4:30 | ~65 seconds)
+**Topic**: Live Test Execution, GTKWave Waveform Walkthrough, IEEE Paper & Wrap-up
+
+* **What to show on screen:**
+  * `3:25 – 3:45`: Switch to **Terminal**. Press Enter on `./scripts/run_all.sh`. Show all 5 suites passing with **618 passed, 0 failed**.
+  * `3:45 – 4:15`: Switch to **GTKWave** showing `cache_2way_demo.vcd`:
+    * Point to **Request 3** ($t = 115\text{ ns}$): show `touch_en` pulse and `lru_bit[0]` flipping from 0 to 1 at $t = 125\text{ ns}$.
+    * Point to **Request 4** ($t = 145\text{ ns}$): show `victim_way = 1` and `fill_en` evicting Way 1 (`0x80`) while keeping Way 0 (`0x00`) intact.
+    * Point to **Request 5** ($t = 185\text{ ns}$): show `resp_hit = 1` hit delivery at $t = 196\text{ ns}$.
+  * `4:15 – 4:30`: Briefly flash `report/phase1-report.pdf` on screen, then return to title slide.
+
+* **Spoken Lines:**
+  > *"Thank you, Prachee. I am **Vani Rudra**.*
+  >
+  > *Let's run our prototype live. In the terminal, I execute our master regression runner: `./scripts/run_all.sh`.*
+  >
+  > *(Wait 2-3 seconds as test runs)*
+  >
+  > *As you can see, all five test suites execute sequentially, and all **618 automated assertions pass with zero failures**.*
+  >
+  > *Now let's examine the decisive proof in GTKWave.*
+  >
+  > *Here at 115 nanoseconds, Request 3 accesses address 0x00. It hits on Way 0. Notice `touch_en` pulses high, and `lru_bit[0]` flips from 0 to 1 at 125 nanoseconds. This is the pivotal moment: it marks Way 1 as the next victim, protecting 0x00 from eviction.*
+  >
+  > *When Request 4 targets 0x100 at 145 nanoseconds, it is a conflict miss. Because `lru_bit` is 1, `fill_en` at 156 nanoseconds evicts Way 1, leaving Way 0 holding 0x00 completely undisturbed.*
+  >
+  > *When Request 5 re-reads 0x00 at 185 nanoseconds, it scores an immediate hit at 196 nanoseconds! This directly confirms that our LRU replacement prevents the thrashing that crippled the direct-mapped cache.*
+  >
+  > *Finally, our project report is compiled in standard IEEE conference format as `phase1-report.pdf`, and all synthesizable Verilog, testbenches, and verification logs are checked into our GitHub repository.*
+  >
+  > *Thank you for your time!"*
+
+---
+
+## 4. Key Tips for the Recording
+
+1. **Resolution**: Set recording software (OBS, QuickTime, or Zoom) to **1080p** (1920x1080).
+2. **Audio**: Keep microphone levels balanced across all 5 team members.
+3. **Pacing**: Speak naturally at conversational speed. Each speaker has 50–60 seconds, which allows comfortable delivery of 5 to 6 sentences without rushing.
+4. **Pointer**: Use your mouse cursor to point to the specific signal in GTKWave or line of RTL being discussed.
