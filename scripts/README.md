@@ -24,7 +24,9 @@ This directory is designated for build, linting, and simulation automation scrip
    - Verified: 52/52 checks passing.
    - Usage from repository root: `./scripts/run_cache_compare.sh`
 
-5. `run_trace_sim.sh`:
-   - (Round 2 Kushal): Extended multi-trace comparative benchmark automation.
+5. `run_system_regression.sh`:
+   - Targeted system regression test runner (`tb_system_regression.sv`) covering full-population reset, cold access invalidation, back-to-back first-ready-cycle acceptance, and cross-set LRU independence.
+   - Verified: 344/344 checks passing.
+   - Usage from repository root: `./scripts/run_system_regression.sh`
 
 All scripts must run from the repository root using relative paths and adhere to standard POSIX shell conventions.
