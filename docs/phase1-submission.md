@@ -31,7 +31,12 @@
 | Working prototype demonstration | Segment 3 runs `./scripts/run_all.sh` live (618 assertions) | ✅ Scripted |
 | RTL walkthrough / block diagrams | Segment 2 shows `docs/architecture.md` diagrams | ✅ Scripted |
 | Simulation traces / waveform inspection | Segment 4 walks through `cache_2way_demo.vcd` in GTKWave, explains Requests 3 and 4 | ✅ Scripted |
-| Recorded and uploaded video | No video link found in repository | ⏳ **Pending** — record following script, upload, update `demo/README.md` |
+| Recorded and uploaded video | [Watch prototype video on Google Drive](https://drive.google.com/drive/folders/1mvhw6SxGwut4hR3gHfqjN-LHExD14j1P?usp=sharing) | ✅ Link provided |
+
+> **Video Link & Verification Status**:
+> - **URL**: `https://drive.google.com/drive/folders/1mvhw6SxGwut4hR3gHfqjN-LHExD14j1P?usp=sharing`
+> - **Reachability**: HTTP 200 confirmed.
+> - **Automated Inspection Status**: Per explicit user directive, video content, member speech, and actual playback length were not processed via automated tools and remain subject to human instructor evaluation.
 
 ---
 
@@ -40,9 +45,9 @@
 | Requirement | Evidence | Status |
 |:---|:---|:---:|
 | Repository URL submitted | URL: `https://github.com/Kushal425/MCA-Project7-Team-5-1-MUX.git` | ✅ URL known |
-| Course form submission | Not confirmed by team | ⏳ **Pending** — submit URL via official course form |
-| IEEE project report present | `report/main.tex`, `report/refs.bib` | ✅ Source present |
-| Prototype/demo video link | `demo/README.md` placeholder | ⏳ Pending |
+| Course form submission | Repository URL ready for submission via official course form | ⏳ Pending human action |
+| IEEE project report present | `report/main.tex`, `report/refs.bib`, `report/phase1-report.pdf` | ✅ Tracked in Git |
+| Prototype/demo video link | [Google Drive Folder](https://drive.google.com/drive/folders/1mvhw6SxGwut4hR3gHfqjN-LHExD14j1P?usp=sharing) in `README.md` and `demo/README.md` | ✅ Integrated |
 | All synthesizable RTL files | `rtl/cache_2way.v`, `rtl/cache_2way_store.v`, `rtl/cache_direct.v` | ✅ |
 | Testbench files | `tb/tb_cache_2way_store.sv`, `tb/tb_cache_2way.sv`, `tb/tb_cache_direct.sv`, `tb/tb_cache_compare.sv`, `tb/tb_system_regression.sv`, `tb/tb_demo_waveform.sv`, `tb/mem_block_model.v` | ✅ |
 | Simulation scripts | `scripts/run_all.sh` and 5 individual runners | ✅ |

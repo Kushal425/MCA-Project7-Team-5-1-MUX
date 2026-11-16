@@ -26,7 +26,7 @@ Both cache models are written in synthesizable Verilog-2001, targeting an FPGA-f
 | 6 | **Vani** | IEEE project report (`report/`), prototype demo video (`demo/`), submission packaging | **COMPLETED** |
 
 > [!IMPORTANT]
-> **Phase I Status**: All development and packaging work is complete. See [Phase I Submission Checklist](docs/phase1-submission.md) for remaining human actions (compile PDF, record video, submit course form).
+> **Phase I Status**: Complete and ready for submission. The IEEE report PDF is compiled and tracked, prototype demonstration video link is integrated, and all 618 automated verification assertions pass cleanly. See [Phase I Submission Checklist](docs/phase1-submission.md).
 
 ---
 
@@ -34,23 +34,31 @@ Both cache models are written in synthesizable Verilog-2001, targeting an FPGA-f
 
 | Deliverable | Location | Status |
 | :--- | :--- | :---: |
-| IEEE Report (LaTeX source) | [`report/main.tex`](report/main.tex), [`report/refs.bib`](report/refs.bib) | ✅ Overleaf-ready |
+| IEEE Report (LaTeX source) | [`report/main.tex`](report/main.tex), [`report/refs.bib`](report/refs.bib) | ✅ Complete & Overleaf-ready |
 | Report PDF | [`report/phase1-report.pdf`](report/phase1-report.pdf) | ✅ Compiled & Tracked |
-| Demo Recording Script | [`demo/recording-script.md`](demo/recording-script.md) | ✅ |
-| Demo Video | [`demo/README.md`](demo/README.md) | ⏳ Recording pending |
-| Submission Checklist | [`docs/phase1-submission.md`](docs/phase1-submission.md) | ✅ |
+| Prototype Demonstration Video | [Watch the prototype demonstration video on Google Drive](https://drive.google.com/drive/folders/1mvhw6SxGwut4hR3gHfqjN-LHExD14j1P?usp=sharing) | ✅ Link Provided |
+| Demo Script & Walkthrough | [`demo/recording-script.md`](demo/recording-script.md), [`demo/presentation.pdf`](demo/presentation.pdf) | ✅ Complete |
+| Submission Checklist & Audit | [`docs/phase1-submission.md`](docs/phase1-submission.md) | ✅ Complete |
+
+### Prototype Demonstration Video
+
+The prototype demonstration video covers the project motivation, introduces all five team members by name (Krishna, Apoorva, Prachee, Kushal, Vani), explains the set-associative cache architecture and LRU replacement logic, and demonstrates live testbench execution and waveform inspection:
+
+- **Direct Link**: [Watch the prototype demonstration video on Google Drive](https://drive.google.com/drive/folders/1mvhw6SxGwut4hR3gHfqjN-LHExD14j1P?usp=sharing)
+- **Folder URL**: `https://drive.google.com/drive/folders/1mvhw6SxGwut4hR3gHfqjN-LHExD14j1P?usp=sharing`
+- **Narration Script & Presentation**: [`demo/recording-script.md`](demo/recording-script.md) and [`demo/presentation.pdf`](demo/presentation.pdf)
 
 ---
 
 ## 3. Key Documentation & Specifications
 
-- **[PROJECT_BRIEF.md](PROJECT_BRIEF.md)**: The permanent single source of truth containing team scope, course evaluation criteria, original project specification, hardware requirements, and submission rules.
-- **[AGENTS.md](AGENTS.md)**: Mandatory rules and protocol for AI coding assistants working in this repository.
-- **[HANDOFF.md](HANDOFF.md)**: Chronological project log tracking work completed, checks run, real simulation results, and handoffs.
-- **[docs/interface.md](docs/interface.md)**: Complete hardware interface contracts, port lists, bit slicings, and timing diagrams.
-- **[docs/architecture.md](docs/architecture.md)**: Detailed datapath architecture, block diagrams, and controller FSM state transition graphs.
+- **[docs/phase1-submission.md](docs/phase1-submission.md)**: Comprehensive Phase I submission audit, deliverable checklist, course criteria mapping, and multi-author Git contribution records.
+- **[docs/interface.md](docs/interface.md)**: Hardware interface contracts, port lists, bit slicings, and request/response timing diagrams.
+- **[docs/architecture.md](docs/architecture.md)**: Datapath architecture, block diagrams, storage array sizing, and 4-state controller FSM transitions.
 - **[docs/demo-trace.md](docs/demo-trace.md)**: Worked step-by-step example and analytical predictions for the 5-access benchmark trace (`0x00`, `0x80`, `0x00`, `0x100`, `0x00`).
-- **[docs/lru_explanation.md](docs/lru_explanation.md)**: Detailed algorithmic proof of LRU recency tracking and replacement mechanics.
+- **[docs/lru_explanation.md](docs/lru_explanation.md)**: Algorithmic proof of LRU recency tracking and deterministic victim selection.
+- **[report/README.md](report/README.md)**: Report documentation, compilation guide ([`report/BUILD.md`](report/BUILD.md)), and tracked PDF ([`report/phase1-report.pdf`](report/phase1-report.pdf)).
+- **[demo/README.md](demo/README.md)**: Demonstration video access link, duration guidelines, and recording script.
 
 ---
 

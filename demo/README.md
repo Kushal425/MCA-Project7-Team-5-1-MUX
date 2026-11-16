@@ -9,29 +9,11 @@ See [`recording-script.md`](recording-script.md) for the full timed narration sc
 
 ## Video Link
 
-> **Status: ⏳ Recording/Upload Pending**
->
-> The demonstration video has not yet been recorded or uploaded. Once the video is recorded following the script in `recording-script.md`, update this section with the permanent link.
-
-### Instructions for Adding the Video Link
-
-1. Record the demonstration following `recording-script.md`.
-2. Upload to YouTube (unlisted) or Google Drive (shared with course instructors).
-3. Replace the placeholder below with the actual link:
-
-```
-**Video URL**: [PASTE PERMANENT VIDEO LINK HERE]
-**Duration**: [ACTUAL DURATION, e.g., 4:28]
-**Uploaded by**: [TEAM MEMBER NAME]
-**Upload date**: [DATE]
-```
-
-4. Commit and push:
-```bash
-git add demo/README.md
-git commit -m "Add prototype demo video link"
-git push origin main
-```
+- **Direct Link**: [Watch the prototype demonstration video on Google Drive](https://drive.google.com/drive/folders/1mvhw6SxGwut4hR3gHfqjN-LHExD14j1P?usp=sharing)
+- **Folder URL**: `https://drive.google.com/drive/folders/1mvhw6SxGwut4hR3gHfqjN-LHExD14j1P?usp=sharing`
+- **Target Duration**: $\le 5$ minutes (Script timed to 4:30)
+- **Team Members Covered**: Krishna, Apoorva, Prachee, Kushal, Vani
+- **Verification Status**: Link supplied and verified reachable via HTTP 200. Automated inspection of video length and audio/visual content was not executed per user instruction; content and sharing access remain for course instructor evaluation.
 
 ## Pre-Recording Checklist
 
