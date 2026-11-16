@@ -1,0 +1,332 @@
+\documentclass[conference]{IEEEtran}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{cite}
+\usepackage{amsmath,amssymb}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{url}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{textcomp}
+
+\lstset{
+  basicstyle=\footnotesize\ttfamily,
+  breaklines=true,
+  frame=single,
+  numbers=left,
+  numberstyle=\tiny,
+  keywordstyle=\color{blue},
+  commentstyle=\color{gray},
+  columns=fullflexible
+}
+
+\begin{document}
+
+\title{2-Way Set-Associative Cache with LRU Replacement:\\Phase~I Prototype and Comparative Evaluation}
+
+\author{
+\IEEEauthorblockN{Krishna Pramod Dubale, Apoorva Choudhary, Prachee Dhar, Kushal Sarkar, Vani Rudra}
+\IEEEauthorblockA{Modern Computer Architecture (MCA) --- Project~7\\
+Rishihood University}
+}
+
+\maketitle
+
+% ============================================================
+\begin{abstract}
+We present the Phase~I prototype of a synthesizable 2-Way Set-Associative
+Cache with Least-Recently-Used (LRU) replacement policy, implemented in
+Verilog-2001 and verified using Icarus Verilog.  The cache provides 128
+bytes of data storage organized as 4~sets with 2~ways per set and 16-byte
+cache blocks.  A direct-mapped cache baseline of identical capacity serves
+as a comparison target.  Both designs share a common external interface with
+synchronous active-high reset, a single outstanding request handshake
+protocol, and a combinational lower-memory refill port.  Automated
+simulation across five test suites totaling 618~assertions confirms
+functional correctness.  On a 5-access conflict trace targeting a single
+set, the 2-way design achieves a 40\% hit rate compared to the
+direct-mapped baseline's 0\% hit rate, demonstrating the effectiveness of
+LRU set associativity in mitigating ping-pong thrashing.  A spatial
+locality trace confirms both architectures achieve identical 66.7\% hit
+rates through multi-word block reuse, validating that the performance
+advantage is attributable to associativity rather than capacity.
+\end{abstract}
+
+\begin{IEEEkeywords}
+cache memory, set associativity, LRU replacement, direct-mapped cache,
+conflict miss, Verilog, hardware verification
+\end{IEEEkeywords}
+
+% ============================================================
+\section{Introduction}
+
+Cache memories occupy a critical position in modern computer architecture,
+bridging the performance gap between fast processors and slower main
+memory~\cite{patterson2017}.  Direct-mapped caches offer simplicity and
+fast access times but suffer from conflict misses when multiple frequently
+accessed addresses map to the same set~\cite{hill1988}.  Set-associative
+caches mitigate this by providing multiple storage locations (ways) per set,
+reducing conflict misses at the cost of additional comparator hardware and a
+replacement policy~\cite{hennessy2019}.
+
+This project implements and compares a 2-way set-associative cache with LRU
+replacement against a direct-mapped baseline, both with 128~bytes of data
+storage.  The Phase~I deliverable provides working read-path prototypes with
+automated verification evidence.
+
+% ============================================================
+\section{Literature Review}
+
+Smith~\cite{smith1982} provided one of the earliest comprehensive surveys
+of cache memory design, establishing the taxonomy of compulsory, capacity,
+and conflict misses that remains foundational to cache analysis.  His work
+demonstrated that increasing associativity reduces conflict misses, with
+diminishing returns beyond 4-way or 8-way configurations.
+
+Hill~\cite{hill1988} argued that direct-mapped caches could achieve
+performance competitive with set-associative designs under typical
+workloads, primarily because their shorter access times compensate for
+higher miss rates.  However, Hill's analysis acknowledged that
+pathological access patterns---where multiple hot addresses map to the
+same set---expose the direct-mapped cache to severe thrashing.
+
+Jouppi~\cite{jouppi1990} proposed augmenting direct-mapped caches with
+small fully-associative victim caches to capture conflict misses.  This
+work implicitly demonstrated that conflict misses represent a significant
+performance concern, motivating the set-associative designs that the
+victim cache seeks to approximate.
+
+Przybylski et al.~\cite{przybylski1988} conducted systematic performance
+tradeoff analyses across cache sizes, associativities, and block sizes,
+concluding that 2-way set associativity captures the majority of the
+conflict-miss reduction benefit for a given capacity, making it a
+cost-effective design point.
+
+Al-Zoubi et al.~\cite{al-zoubi2004} evaluated cache replacement policies
+including LRU, FIFO, and random replacement using the SPEC~CPU2000 benchmark
+suite, confirming that LRU consistently outperforms other policies for
+2-way and 4-way configurations.  Their empirical data supports the
+selection of LRU as the replacement policy for our 2-way design.
+
+Patterson and Hennessy~\cite{patterson2017} formalize the Average Memory
+Access Time (AMAT) model as:
+\begin{equation}
+\text{AMAT} = t_{\text{hit}} + r_{\text{miss}} \times p_{\text{miss}}
+\label{eq:amat}
+\end{equation}
+where $t_{\text{hit}}$ is the hit time, $r_{\text{miss}}$ is the miss
+penalty, and $p_{\text{miss}}$ is the miss rate.  Reducing the miss rate
+through associativity directly improves AMAT, provided the hit time
+increase from additional comparators is modest.
+
+Our work follows these established principles to construct a minimal but
+complete 2-way LRU cache and direct-mapped baseline, verified through
+automated simulation using Icarus Verilog~\cite{icarus-verilog} with
+Verilog-2001~\cite{ieee-verilog2001} RTL and SystemVerilog testbenches.
+
+% ============================================================
+\section{Proposed Solution}
+
+\subsection{Design Overview}
+
+Both cache designs share identical parameters: 128~bytes of data capacity
+organized as 16-byte blocks (four 32-bit words per block), 32-bit byte
+addressing, and an identical external interface for direct comparison.
+
+\begin{itemize}
+  \item \textbf{2-Way Set-Associative} (\texttt{cache\_2way}): 4~sets $\times$ 2~ways.  Tag: \texttt{addr[31:6]} (26~bits).  Set index: \texttt{addr[5:4]} (2~bits).  Word select: \texttt{addr[3:2]}.
+  \item \textbf{Direct-Mapped Baseline} (\texttt{cache\_direct}): 8~sets $\times$ 1~way.  Tag: \texttt{addr[31:7]} (25~bits).  Set index: \texttt{addr[6:4]} (3~bits).  Word select: \texttt{addr[3:2]}.
+\end{itemize}
+
+\subsection{Architecture}
+
+The 2-way cache consists of two modules.  The storage submodule
+(\texttt{cache\_2way\_store}) encapsulates the dual-way tag and data
+arrays, parallel tag comparators, valid bit registers, per-set 1-bit
+LRU registers, a deterministic victim selection unit, and a 4-word read
+multiplexer.
+
+The top-level controller (\texttt{cache\_2way}) implements a 4-state
+finite state machine (IDLE, LOOKUP, REFILL, RESP) that sequences each
+accepted request through tag comparison, optional memory refill, and
+response delivery.
+
+\begin{figure}[ht]
+\centering
+\small
+\begin{verbatim}
+  31            6 5  4 3  2 1  0
+ +---------------+----+----+----+
+ |     TAG       |SET |WORD|BYTE|
+ |   [31:6]      |[5:4|[3:2|[1:0|
+ +---------------+----+----+----+
+      26 bits     2b   2b   2b
+                (4 sets)
+\end{verbatim}
+\caption{Address field decomposition for the 2-way set-associative cache (128~bytes, 4~sets $\times$ 2~ways, 16-byte blocks).}
+\label{fig:addr-fields}
+\end{figure}
+
+\subsection{Block Diagram}
+
+Fig.~\ref{fig:block} illustrates the top-level datapath.  The controller
+latches \texttt{req\_addr} into \texttt{saved\_addr} upon handshake
+acceptance.  The storage submodule performs combinational parallel tag
+comparison on both ways.  On a hit, \texttt{touch\_en} updates the LRU
+recency bit; on a miss, the memory refill port fetches a 128-bit block
+and \texttt{fill\_en} writes it into the victim way selected by the LRU
+or invalid-slot priority logic.
+
+\begin{figure}[ht]
+\centering
+\small
+\begin{verbatim}
+ req_valid/addr --> [Controller FSM] --> resp_valid/hit/data
+                    |     ^
+                    v     |
+ [Lower Memory] <-> [cache_2way_store]
+  mem_block_addr      |  Way 0  |  Way 1  |
+  mem_block_data      | Tag CMP | Tag CMP |
+                      | LRU Reg | Victim  |
+                      | Word MUX           |
+\end{verbatim}
+\caption{Simplified block diagram of \texttt{cache\_2way}.  The controller FSM orchestrates the handshake, lookup, refill, and response phases.}
+\label{fig:block}
+\end{figure}
+
+\subsection{Controller FSM}
+
+The finite state machine operates as follows:
+\begin{enumerate}
+  \item \textbf{IDLE}: \texttt{req\_ready}~=~1.  On \texttt{req\_valid $\land$ req\_ready}, latch address, transition to LOOKUP.
+  \item \textbf{LOOKUP}: Evaluate tag match.  On hit, assert \texttt{touch\_en} for one cycle, register response, transition to RESP.  On miss, transition to REFILL.
+  \item \textbf{REFILL}: Assert \texttt{fill\_en} for one cycle, writing \texttt{mem\_block\_data} into the victim way.  Register response with \texttt{resp\_hit}~=~0, transition to RESP.
+  \item \textbf{RESP}: Deliver one-cycle \texttt{resp\_valid} pulse.  Return to IDLE.
+\end{enumerate}
+
+The controller enforces a mutual exclusion invariant: \texttt{touch\_en} and \texttt{fill\_en} are never asserted simultaneously.
+
+\subsection{LRU Replacement and Worked Example}
+
+Each set maintains a 1-bit LRU register.  When \texttt{lru\_bit}~=~0, Way~0 is the least recently used; when \texttt{lru\_bit}~=~1, Way~1 is the LRU victim.  Invalid slots receive absolute priority during allocation.
+
+Consider the 5-access trace starting from a cold cache:
+\begin{center}
+\texttt{0x00}, \texttt{0x80}, \texttt{0x00}, \texttt{0x100}, \texttt{0x00}
+\end{center}
+
+All three unique addresses map to Set~0 in both designs.  In the 2-way cache:
+
+\begin{enumerate}
+  \item \textbf{Request~1} (\texttt{0x00}): Miss.  Fill Way~0.  \texttt{lru\_bit}~$\leftarrow$~1.
+  \item \textbf{Request~2} (\texttt{0x80}): Miss.  Fill Way~1.  \texttt{lru\_bit}~$\leftarrow$~0.
+  \item \textbf{Request~3} (\texttt{0x00}): \textbf{Hit} on Way~0.  \texttt{touch\_en} flips \texttt{lru\_bit} to~1, protecting \texttt{0x00} from eviction.
+  \item \textbf{Request~4} (\texttt{0x100}): Miss.  LRU selects Way~1 (\texttt{0x80}) as victim.  \texttt{0x00} survives in Way~0.
+  \item \textbf{Request~5} (\texttt{0x00}): \textbf{Hit} on Way~0.  Confirmed at $t=196$\,ns in waveform evidence.
+\end{enumerate}
+
+Result: 2/5 hits (40\%).  The direct-mapped baseline achieves 0/5 hits (0\%) because each access to Set~0 evicts the sole resident block.
+
+\subsection{Verification Methodology}
+
+All RTL is written in synthesizable Verilog-2001 and compiled using Icarus Verilog with the \texttt{-g2012} flag for SystemVerilog testbenches~\cite{icarus-verilog}.  A deterministic testbench memory model supplies block data where each 32-bit word equals its own aligned byte address, enabling data integrity verification independent of hit/miss classification.
+
+Five automated test suites verify the design:
+\begin{itemize}
+  \item Storage unit tests (51~assertions): Cold state, lookup invariance, empty-way priority, word multiplexing, LRU touch, eviction, set independence, and reset.
+  \item 2-way integration tests (141~assertions): Protocol, 5-request demo trace, spatial locality, address mutation immunity, idle stability, and reset.
+  \item Direct-mapped tests (30~assertions): Protocol, conflict trace, spatial hits, mutation immunity, and reset.
+  \item Comparative trace harness (52~assertions): Dual-cache concurrent execution under identical conflict and locality traces.
+  \item System regressions (344~assertions): Full-population reset, post-reset cold access, back-to-back streaming, and cross-set LRU independence.
+\end{itemize}
+
+All 618~assertions pass with zero failures.
+
+% ============================================================
+\section{Initial Comparison Results}
+
+Table~\ref{tab:comparison} summarizes the verified comparison results from automated simulation.
+
+\begin{table}[ht]
+\centering
+\caption{Verified Simulation Results: 2-Way vs.\ Direct-Mapped Cache}
+\label{tab:comparison}
+\begin{tabular}{@{}lccccc@{}}
+\toprule
+\textbf{Trace} & \textbf{Accesses} & \multicolumn{2}{c}{\textbf{2-Way}} & \multicolumn{2}{c}{\textbf{Direct}} \\
+\cmidrule(lr){3-4} \cmidrule(lr){5-6}
+ & & Hits & Rate & Hits & Rate \\
+\midrule
+A (Conflict)  & 5 & 2 & 40\%   & 0 & 0\%  \\
+B (Locality)  & 6 & 4 & 66.7\% & 4 & 66.7\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Trace~A demonstrates the conflict-miss advantage of set associativity: the 2-way cache retains a working set of two blocks in a single set, whereas the direct-mapped cache suffers complete thrashing.  Trace~B confirms that the spatial locality benefit of multi-word blocks is shared equally by both architectures, isolating the performance gain to associativity rather than capacity.
+
+% ============================================================
+\section{Individual Contributions}
+
+\begin{enumerate}
+  \item \textbf{Kushal Sarkar} (Scaffold and Verification, Handoffs~1 and~4):
+    Initialized the repository, authored the project brief
+    (\texttt{PROJECT\_BRIEF.md}), interface contracts
+    (\texttt{docs/interface.md}), benchmark trace analysis
+    (\texttt{docs/demo-trace.md}), and agent workflow rules
+    (\texttt{AGENTS.md}).  In Round~2, implemented system regression
+    testbenches (\texttt{tb/tb\_system\_regression.sv}, 344~assertions),
+    the master verification workflow (\texttt{scripts/run\_all.sh}),
+    and the reproducible demo waveform evidence
+    (\texttt{docs/evidence/cache\_2way\_demo.vcd}).
+    Commits: \texttt{3043e05}, \texttt{92dfa5b}, \texttt{3eb612c},
+    \texttt{d6cdad6}, \texttt{005cb92}, \texttt{fdb01a1}.
+
+  \item \textbf{Krishna Pramod Dubale} (Storage and LRU, Handoff~2):
+    Implemented the synthesizable \texttt{cache\_2way\_store} submodule
+    (\texttt{rtl/cache\_2way\_store.v}) with dual-way tag/data arrays,
+    parallel tag comparators, per-set 1-bit LRU registers, and
+    deterministic victim selection.  Authored 51-assertion unit testbench
+    (\texttt{tb/tb\_cache\_2way\_store.sv}) and LRU walkthrough
+    documentation (\texttt{docs/lru\_explanation.md}).
+    Commits: \texttt{d76542e}, \texttt{0c1a380}, \texttt{fb36862}.
+
+  \item \textbf{Apoorva Choudhary} (Controller, Handoff~3):
+    Implemented the top-level \texttt{cache\_2way} controller
+    (\texttt{rtl/cache\_2way.v}) with 4-state FSM, request latching,
+    LRU touch and refill datapath integration, and true miss
+    classification preservation.  Authored the reusable deterministic
+    memory model (\texttt{tb/mem\_block\_model.v}), 141-assertion
+    integration testbench (\texttt{tb/tb\_cache\_2way.sv}), and
+    architectural documentation (\texttt{docs/architecture.md}).
+    Commits: \texttt{7c777f7}, \texttt{ba299cf}, \texttt{9a976c8}.
+
+  \item \textbf{Prachee Dhar} (Comparison, Handoff~4):
+    Implemented the direct-mapped cache baseline
+    (\texttt{rtl/cache\_direct.v}), 30-assertion baseline testbench
+    (\texttt{tb/tb\_cache\_direct.sv}), and the 52-assertion comparative
+    dual-cache trace harness (\texttt{tb/tb\_cache\_compare.sv}).
+    Authored verified comparison evidence
+    (\texttt{docs/evidence/cache\_comparison\_evidence.md}).
+    Commits: \texttt{fd3d8d7}, \texttt{7188fc6}, \texttt{cc045d7}.
+
+  \item \textbf{Vani Rudra} (Report and Demo Package, Handoff~5):
+    Prepared this IEEE Phase~I progress report, demonstration video
+    recording script, Phase~I submission audit checklist, and final
+    repository navigation.
+\end{enumerate}
+
+% ============================================================
+\section*{Acknowledgments}
+The authors acknowledge the Modern Computer Architecture course
+instructors at Rishihood University for defining the project
+specifications.
+
+% ============================================================
+\bibliographystyle{IEEEtran}
+\bibliography{refs}
+
+\end{document}
