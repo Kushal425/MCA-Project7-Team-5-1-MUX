@@ -445,3 +445,76 @@ This log tracks all architectural work, implementation milestones, code modifica
   - Single outstanding transaction handshake (no pipelining).
   - Combinational block-memory model without variable DRAM access latency.
 - **Next Member**: **Kushal (verification)** (Round 2: `tb/` testbenches, comparative simulation scripts in `scripts/`).
+
+
+---
+
+## Entry 5: System Regressions, Master Full-Prototype Workflow, and Demo Waveform Evidence
+
+- **Date**: 2026-11-16
+- **Member**: **Kushal (verification)** (Round 2, Phase I Handoff 4)
+- **Module & Script Locations**:
+  - `tb/tb_system_regression.sv`
+  - `scripts/run_system_regression.sh`
+  - `scripts/run_all.sh`
+  - `tb/tb_demo_waveform.sv`
+  - `scripts/generate_demo_waveform.sh`
+  - `docs/evidence/cache_2way_demo.vcd`
+  - `docs/evidence/demo_waveform_evidence.md`
+  - `README.md`
+  - `tb/README.md`
+  - `scripts/README.md`
+  - `docs/evidence/README.md`
+- **Work Completed**:
+  1. **Targeted Self-Checking System Regressions (`tb/tb_system_regression.sv`)**:
+     - Implemented 344 passing assertions covering uncovered system-level behaviors across both caches:
+       - **Reset After Population**: Fully populated all 8 blocks in `cache_2way` (Sets 0..3, Ways 0..1) and all 8 sets in `cache_direct`; verified all 8 blocks were active hits; asserted synchronous reset; verified `req_ready == 0`, `resp_valid == 0`, and verified requests asserted during reset were safely suppressed.
+       - **Post-Reset Cold Accesses**: Re-queried the exact populated addresses post-reset; verified 100% of accesses were cold misses (`resp_hit == 0`), proving complete invalidation; verified memory refills restored valid data.
+       - **First-Ready-Cycle Back-to-Back Acceptance**: Verified streaming requests without idle bubble cycles; verified master presenting `req_valid = 1` on the exact cycle `req_ready` asserts is accepted immediately with zero latency penalty.
+       - **Cross-Set LRU Independence**: Verified that recency updates on Set 0 (flipping Set 0 LRU victim pointer from Way 0 to Way 1) do not leak into Set 2; verified heavy interleaved traffic on Sets 1, 2, and 3 leaves Set 2's Way 0 victim pointer untouched; verified Set 2 miss evicts Way 0 and preserves Way 1.
+       - **Direct-Mapped Regressions**: Full-population reset, cold access invalidation, and back-to-back streaming verification for `cache_direct`.
+  2. **Master Verification Workflow (`scripts/run_all.sh`)**:
+     - Built single unified runner executing all 5 project verification suites in sequence:
+       1. `run_store_unit_test.sh` (51 assertions)
+       2. `run_cache_2way_integration_test.sh` (141 assertions)
+       3. `run_cache_direct_test.sh` (30 assertions)
+       4. `run_cache_compare.sh` (52 assertions)
+       5. `run_system_regression.sh` (344 assertions)
+     - Added actionable dependency diagnostics checking for `iverilog` and `vvp` with OS-specific installation instructions (`brew install icarus-verilog` / `apt-get install iverilog`).
+     - Preflight validation ensuring all required source, test, and script files are present.
+     - Safe pipe handling under `set -euo pipefail` without SIGPIPE issues.
+     - Clean exit traps maintaining all simulation outputs in ignored `sim_build/` directory.
+     - Clean temporary checkout verification: Successfully verified `./scripts/run_all.sh` inside an isolated temporary directory created via `git archive`, confirming zero missing dependencies or untracked inputs.
+  3. **Reproducible 5-Request Demo Waveform & Eviction Analysis**:
+     - Authored `tb/tb_demo_waveform.sv` and automation runner `scripts/generate_demo_waveform.sh`.
+     - Generated reproducible VCD waveform file `docs/evidence/cache_2way_demo.vcd` (7.1 KB).
+     - Authored camera-ready documentation in `docs/evidence/demo_waveform_evidence.md`:
+       - Real signal paths and hierarchical signal dictionary.
+       - Exact nanosecond cycle timeline for all 5 demo accesses (`0x00`, `0x80`, `0x00`, `0x100`, `0x00`).
+       - Decisive eviction proof: Pinpointed Request 3's `touch_en` strobe at $t = 125\text{ ns}$ flipping Set 0's LRU victim bit to 1, causing Request 4's miss at $t = 145\text{ ns}$ to evict Way 1 (`0x80`) at cycle 15.5 ($t = 156\text{ ns}$), preserving Way 0 (`0x00`) to deliver Request 5's hit at $t = 196\text{ ns}$.
+       - Camera-ready presentation script with timing cues for Vani's demo video.
+  4. **Documentation & Navigation Refresh**:
+     - Updated `README.md` with toolchain prerequisites, the master verification command `./scripts/run_all.sh`, and direct links to all verification evidence.
+     - Updated `scripts/README.md`, `tb/README.md`, and `docs/evidence/README.md`.
+- **Verified Figures for IEEE Report & Demo Video**:
+  - `cache_2way_store` Unit Tests: **51 / 51 passed (100%)**
+  - `cache_2way` Integration Tests: **141 / 141 passed (100%)**
+  - `cache_direct` Baseline Tests: **30 / 30 passed (100%)**
+  - Comparative Trace Harness (`tb_cache_compare.sv`): **52 / 52 passed (100%)**
+    - Trace A (5-Access Conflict): `cache_2way` **40% hit rate** (2/5) vs `cache_direct` **0% hit rate** (0/5, 100% thrashing).
+    - Trace B (6-Access Locality): `cache_2way` **66.7% hit rate** (4/6) vs `cache_direct` **66.7% hit rate** (4/6).
+  - Targeted System Regressions (`tb_system_regression.sv`): **344 / 344 passed (100%)**
+  - **Grand Total Verified Across All 5 Suites**: **618 / 618 passed, 0 failed (100% pass rate)**.
+- **Action Items & Guidance for Vani (report/demo package)**:
+  1. **IEEE Progress Report (`report/`)**:
+     - Draft standard two-column conference paper in LaTeX.
+     - Section Outline: Abstract, Literature Review, Proposed Solution (architecture block diagrams, FSM states, and LRU datapath), Results & Individual Contributions, References.
+     - Cite verified figures: 618 total passing assertions across 5 suites, 40% vs 0% conflict benchmark comparison, cycle 15.5 decisive eviction timestamp.
+  2. **Prototype Demo Video (`demo/`)**:
+     - Maximum 5 minutes duration.
+     - Introduce all 5 members by name: Krishna, Apoorva, Prachee, Kushal, Vani.
+     - Demonstrate working prototype: RTL walkthrough (`rtl/cache_2way.v`, `rtl/cache_2way_store.v`, `rtl/cache_direct.v`), block diagrams from `docs/architecture.md`, and GTKWave simulation of `docs/evidence/cache_2way_demo.vcd` using the narration script in `docs/evidence/demo_waveform_evidence.md`.
+  3. **Submission Package**:
+     - Verify report PDF compiles cleanly (`report/report.pdf`).
+     - Submit GitHub repository URL (`https://github.com/Kushal425/MCA-Project7-Team-5-1-MUX.git`) through the official course form prior to November 16, 2026, 11:59 PM IST.
+- **Next Member**: **Vani (report/demo package)**.

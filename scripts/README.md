@@ -35,4 +35,8 @@ This directory is designated for build, linting, and simulation automation scrip
    - Verified: 344/344 checks passing.
    - Usage from repository root: `./scripts/run_system_regression.sh`
 
+6. `generate_demo_waveform.sh`:
+   - Compiles and runs `tb_demo_waveform.sv` to regenerate the reproducible VCD waveform file at `docs/evidence/cache_2way_demo.vcd`.
+   - Usage from repository root: `./scripts/generate_demo_waveform.sh`
+
 All scripts must run from the repository root using relative paths and adhere to standard POSIX shell conventions.
