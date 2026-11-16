@@ -39,11 +39,20 @@ Before hitting record, have these 4 windows open and ready to switch between (us
 3. **Window 3 (Clean Terminal)**:
    - Working directory at project root: `MCA-Project7-Team-5-1-MUX/`.
    - Have the command `./scripts/run_all.sh` typed and ready to press Enter.
-4. **Window 4 (GTKWave)**:
-   - Open command: `gtkwave docs/evidence/cache_2way_demo.vcd`.
-   - Add these signals to display:
-     `clk`, `rst`, `req_valid`, `req_ready`, `req_addr`, `state`, `resp_valid`, `resp_hit`, `resp_data`, `u_store.way0_match`, `u_store.way1_match`, `u_store.touch_en`, `u_store.fill_en`, `u_store.victim_way`, `u_store.lru_bit[0]`.
-   - Horizontal zoom set to fit: 0 ns to 220 ns.
+4. **Window 4 (Waveform Viewer inside VS Code — Recommended)**:
+   - **How to set it up (Takes 10 seconds, no GTKWave installation needed)**:
+     1. In VS Code, press `Cmd + Shift + X` (Extensions).
+     2. Search for **`WaveTrace`** (or **`VCD Viewer`**) and click **Install**.
+     3. In the Explorer, click on [`docs/evidence/cache_2way_demo.vcd`](docs/evidence/cache_2way_demo.vcd) to open it.
+     4. Press `Cmd + B` to collapse the left sidebar so the waveform fills the entire screen.
+     5. Key signals visible in viewer:
+        - `dut.req_addr[31:0]` (shows the 5 requests: `0` $\rightarrow$ `80` $\rightarrow$ `0` $\rightarrow$ `100` $\rightarrow$ `0`)
+        - `touch_en` (strobe updating recency on hit)
+        - `fill_en` (strobe evicting victim line on miss)
+        - `way0_match` & `way1_match` (parallel tag match indicators)
+        - `resp_hit` (hit output: high on Requests 3 & 5)
+        - `req_ready`, `resp_valid`, `clk`, `rst`
+     6. Zoom the timescale so 0 ns to 220 ns fits across the screen.
 
 ---
 
@@ -141,15 +150,16 @@ Before hitting record, have these 4 windows open and ready to switch between (us
 ---
 
 ### 🎙️ Speaker 5: Vani Rudra (3:25 – 4:30 | ~65 seconds)
-**Topic**: Live Test Execution, GTKWave Waveform Walkthrough, IEEE Paper & Wrap-up
+**Topic**: Live Test Execution, VS Code Waveform Walkthrough, IEEE Paper & Wrap-up
 
 * **What to show on screen:**
   * `3:25 – 3:45`: Switch to **Terminal**. Press Enter on `./scripts/run_all.sh`. Show all 5 suites passing with **618 passed, 0 failed**.
-  * `3:45 – 4:15`: Switch to **GTKWave** showing `cache_2way_demo.vcd`:
-    * Point to **Request 3** ($t = 115\text{ ns}$): show `touch_en` pulse and `lru_bit[0]` flipping from 0 to 1 at $t = 125\text{ ns}$.
-    * Point to **Request 4** ($t = 145\text{ ns}$): show `victim_way = 1` and `fill_en` evicting Way 1 (`0x80`) while keeping Way 0 (`0x00`) intact.
-    * Point to **Request 5** ($t = 185\text{ ns}$): show `resp_hit = 1` hit delivery at $t = 196\text{ ns}$.
-  * `4:15 – 4:30`: Briefly flash `report/phase1-report.pdf` on screen, then return to title slide.
+  * `3:45 – 4:15`: Switch to **VS Code** with `cache_2way_demo.vcd` open full-width (`Cmd + B` to hide sidebar):
+    * Point cursor at **`dut.req_addr[31:0]`**: show the sequence of 5 requests in hex: `0` $\rightarrow$ `80` $\rightarrow$ `0` $\rightarrow$ `100` $\rightarrow$ `0`.
+    * Point cursor at **Request 3** (second `0` at ~115–125 ns): point to `way0_match = 1` and `touch_en` pulsing high for 1 cycle.
+    * Point cursor at **Request 4** (`100` at ~145–156 ns): point to `fill_en` pulsing high, evicting Way 1 (`0x80`) while keeping Way 0 (`0x00`) intact.
+    * Point cursor at **Request 5** (third `0` at ~185–196 ns): point to `resp_hit` pulsing high to **1**, confirming the hit!
+  * `4:15 – 4:30`: Briefly switch to `report/phase1-report.pdf` showing the compiled IEEE Conference paper, then return to title slide.
 
 * **Spoken Lines:**
   > *"Thank you, Prachee. I am **Vani Rudra**.*
@@ -160,13 +170,15 @@ Before hitting record, have these 4 windows open and ready to switch between (us
   >
   > *As you can see, all five test suites execute sequentially, and all **618 automated assertions pass with zero failures**.*
   >
-  > *Now let's examine the decisive proof in GTKWave.*
+  > *Now let's examine the decisive waveform proof right here in VS Code.*
   >
-  > *Here at 115 nanoseconds, Request 3 accesses address 0x00. It hits on Way 0. Notice `touch_en` pulses high, and `lru_bit[0]` flips from 0 to 1 at 125 nanoseconds. This is the pivotal moment: it marks Way 1 as the next victim, protecting 0x00 from eviction.*
+  > *On `dut.req_addr`, we see our five requests: 0, 80, 0, 100, and 0.*
   >
-  > *When Request 4 targets 0x100 at 145 nanoseconds, it is a conflict miss. Because `lru_bit` is 1, `fill_en` at 156 nanoseconds evicts Way 1, leaving Way 0 holding 0x00 completely undisturbed.*
+  > *At 115 nanoseconds on Request 3, address 0 hits on Way 0. Notice `way0_match` goes high and `touch_en` pulses for one cycle. This critical recency update marks Way 1 as the next victim, shielding address 0 from eviction.*
   >
-  > *When Request 5 re-reads 0x00 at 185 nanoseconds, it scores an immediate hit at 196 nanoseconds! This directly confirms that our LRU replacement prevents the thrashing that crippled the direct-mapped cache.*
+  > *When Request 4 arrives for 0x100 at 145 nanoseconds, it misses. Because of the recency touch, `fill_en` at 156 nanoseconds evicts Way 1, leaving Way 0 holding address 0 completely undisturbed.*
+  >
+  > *Therefore, on Request 5, re-reading address 0 scores an immediate hit with `resp_hit` asserting high! This visual trace directly proves that our LRU replacement prevents the thrashing that crippled the direct-mapped cache.*
   >
   > *Finally, our project report is compiled in standard IEEE conference format as `phase1-report.pdf`, and all synthesizable Verilog, testbenches, and verification logs are checked into our GitHub repository.*
   >
