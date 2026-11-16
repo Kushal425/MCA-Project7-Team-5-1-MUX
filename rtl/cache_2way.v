@@ -4,7 +4,7 @@
 //              Integrates request handshaking, address latching, parallel tag
 //              matching, LRU tracking, refill datapath, and response generation.
 // Capacity: 128 bytes (4 sets x 2 ways x 16 bytes/block).
-// Author: Apoorva (Phase I, Handoff 2)
+// Author: Apoorva
 // Standard: Synthesizable Verilog-2001
 // ==============================================================================
 

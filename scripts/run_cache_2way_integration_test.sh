@@ -3,7 +3,7 @@
 # Script: run_cache_2way_integration_test.sh
 # Description: Portable integration test runner for top-level cache_2way.
 #              Tests cache_2way integrated with cache_2way_store and mem_block_model.
-# Author: Apoorva (Phase I, Handoff 2)
+# Author: Apoorva
 # ==============================================================================
 
 set -euo pipefail

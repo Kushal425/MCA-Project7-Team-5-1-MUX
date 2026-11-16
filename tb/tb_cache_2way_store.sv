@@ -2,7 +2,7 @@
 // Testbench: tb_cache_2way_store
 // Description: Race-free, self-checking SystemVerilog unit verification for
 //              cache_2way_store (internal storage and LRU tracking).
-// Author: Krishna (Phase I, Handoff 1)
+// Author: Krishna
 // Standard: SystemVerilog (compiled with iverilog -g2012)
 // ==============================================================================
 

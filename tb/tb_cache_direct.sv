@@ -5,7 +5,7 @@
 //              refill, word selection, and the standard 5-request conflict trace.
 //              Signals are driven on negedge to guarantee setup time vs posedge
 //              sampling; responses are captured by polling resp_valid on posedge.
-// Author: Prachee (Phase I, Handoff 3)
+// Author: Prachee
 // Simulator: Icarus Verilog with -g2012
 // ==============================================================================
 

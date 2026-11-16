@@ -1,8 +1,8 @@
 # Five-Request Demo Waveform Evidence & Eviction Analysis
 
-**Project**: Modern Computer Architecture (Project 7: 2-Way Set-Associative Cache with LRU)  
-**Author**: Kushal (Phase I, Handoff 4)  
-**Artifact**: `docs/evidence/cache_2way_demo.vcd` (Generated via `./scripts/generate_demo_waveform.sh`)  
+**Project**: Modern Computer Architecture (Project 7: 2-Way Set-Associative Cache with LRU)
+**Author**: Kushal
+**Artifact**: `docs/evidence/cache_2way_demo.vcd` (Generated via `./scripts/generate_demo_waveform.sh`)
 **Associated Testbench**: `tb/tb_demo_waveform.sv`
 
 ---
@@ -50,7 +50,7 @@ The benchmark trace exercises Set 0 with addresses `0x00000000`, `0x00000080`, `
 | **1** | `0x00000000` | $t = 35\text{ ns}$ (Cycle 3) | `LOOKUP` $\rightarrow$ `REFILL` $\rightarrow$ `RESP` | Refill @ $46\text{ ns}$ (`fill_en=1`) | **Way 0** | $t = 56\text{ ns}$ (Cycle 5) | **MISS** (`0`) | `0x00000000` | `1` (Points to Way 1) |
 | **2** | `0x00000080` | $t = 75\text{ ns}$ (Cycle 7) | `LOOKUP` $\rightarrow$ `REFILL` $\rightarrow$ `RESP` | Refill @ $86\text{ ns}$ (`fill_en=1`) | **Way 1** | $t = 96\text{ ns}$ (Cycle 9) | **MISS** (`0`) | `0x00000080` | `0` (Points to Way 0) |
 | **3** | `0x00000000` | $t = 115\text{ ns}$ (Cycle 11) | `LOOKUP` $\rightarrow$ `RESP` | Touch @ $125\text{ ns}$ (`touch_en=1`) | N/A | $t = 126\text{ ns}$ (Cycle 12) | **HIT** (`1`) | `0x00000000` | **`1` (Flipped to Way 1!)** |
-| **4** | `0x00000100` | $t = 145\text{ ns}$ (Cycle 14) | `LOOKUP` $\rightarrow$ `REFILL` $\rightarrow$ `RESP` | **Decisive Eviction @ $156\text{ ns}$** | **Way 1** | $t = 166\text{ ns}$ (Cycle 16) | **MISS** (`0`) | `0x00000100` | `0` (Points to Way 0) |
+| **4** | `0x00000100` | $t = 145\text{ ns}$ (Cycle 14) | `LOOKUP` $\rightarrow$ `REFILL` $\rightarrow$ `RESP` | Refill enable observed at 156 ns; write at 165 ns | **Way 1** | $t = 166\text{ ns}$ (Cycle 16) | **MISS** (`0`) | `0x00000100` | `0` (Points to Way 0) |
 | **5** | `0x00000000` | $t = 185\text{ ns}$ (Cycle 18) | `LOOKUP` $\rightarrow$ `RESP` | Touch @ $195\text{ ns}$ (`touch_en=1`) | N/A | $t = 196\text{ ns}$ (Cycle 19) | **HIT** (`1`) | `0x00000000` | `1` (Points to Way 1) |
 
 ---
@@ -76,8 +76,8 @@ The pivotal event of the 2-way set-associative cache occurs across **Request 3 a
    - Request 4 targets `0x00000100` (Tag `0x0000004`, Set 0).
    - In `STATE_LOOKUP`, both ways miss.
    - Transition to `STATE_REFILL`: The storage datapath samples `lru_bit[0] == 1`, driving `victim_way = 1'b1`.
-   - **Observed Eviction Time**: At $t = 156\text{ ns}$ (Clock Cycle 15.5), `fill_en = 1` pulses high.
-   - At the clock edge $t = 160\text{ ns}$ (Cycle 16), `mem_block_data` (`0x10C_0108_0104_0100`) is written into **Way 1**, overwriting the older block `0x80`.
+   - **Refill observation**: At $t = 156\text{ ns}$, `fill_en = 1` is observed high. The write occurs at the next rising edge, 165 ns.
+   - At the rising clock edge $t = 165\text{ ns}$, `mem_block_data` (`0x10C_0108_0104_0100`) is written into **Way 1**, overwriting the older block `0x80`.
    - **Way 0 (`0x00`) remains completely undisturbed in cache!**
 
 4. **The Payoff (Request 5, $t = 185\text{ ns} - 196\text{ ns}$)**:
@@ -88,24 +88,7 @@ The pivotal event of the 2-way set-associative cache occurs across **Request 3 a
 
 ---
 
-## 4. Camera-Ready Walkthrough Script for Prototype Video (Vani)
-
-*Recommended slide / screen: GTKWave showing `cache_2way_demo.vcd` zoomed to 0 ns – 220 ns.*
-
-- **0:00 – 0:30 (Setup)**:
-  > *"Here in GTKWave, we observe the five-request benchmark trace running on our synthesizable two-way set-associative cache. At time 26 nanoseconds, the active-high reset deasserts, and `req_ready` asserts on cycle 0 of IDLE."*
-- **0:30 – 1:15 (Requests 1 & 2 - Compulsory Fills)**:
-  > *"At 35 nanoseconds, Request 1 for address 0x00 enters the cache. Since both ways are cold, it misses and allocates Way 0, updating `lru_bit` to 1. At 75 nanoseconds, Request 2 for 0x80 misses and allocates Way 1. Now both ways in Set 0 are valid, and `lru_bit` drops to 0, marking Way 0 as the next victim."*
-- **1:15 – 2:00 (Request 3 - The Decisive LRU Touch)**:
-  > *"Notice what happens at 115 nanoseconds during Request 3 for address 0x00. It hits on Way 0! The controller asserts `touch_en` for one clock cycle. Watch `lru_bit[0]` flip from 0 to 1 at 125 nanoseconds. This critical transition protects 0x00 by marking Way 1 as the least recently used candidate."*
-- **2:00 – 2:50 (Request 4 - Decisive Eviction & Replacement)**:
-  > *"At 145 nanoseconds, Request 4 requests 0x100. This is a conflict miss. Because `lru_bit` was flipped to 1 by Request 3, `victim_way` points to Way 1. At 156 nanoseconds, `fill_en` pulses, evicting 0x80 from Way 1 while preserving 0x00 in Way 0."*
-- **2:50 – 3:30 (Request 5 - Verification of Hit)**:
-  > *"Finally, at 185 nanoseconds, Request 5 re-reads 0x00. Because LRU replacement spared Way 0, the cache scores a hit at 196 nanoseconds! While a direct-mapped cache suffers 100% thrashing on this sequence, our 2-way cache achieves a 40% hit rate, proving the effectiveness of LRU associativity."*
-
----
-
-## 5. Waveform Regeneration Instructions
+## 4. Waveform Regeneration Instructions
 
 To regenerate this exact VCD trace from source:
 ```bash

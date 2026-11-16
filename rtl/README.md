@@ -2,7 +2,7 @@
 
 This directory is designated for all synthesizable Verilog-2001 hardware description modules.
 
-## Expected Modules & Ownership
+## Modules
 
 1. `cache_2way_store.v`
    - **Owner**: Krishna
@@ -18,7 +18,3 @@ This directory is designated for all synthesizable Verilog-2001 hardware descrip
    - **Owner**: Prachee
    - **Purpose**: Direct-Mapped Cache baseline with identical external interface for comparative performance evaluation.
    - **Contract**: See [docs/interface.md](../docs/interface.md#4-external-cache-module-interface).
-
-> [!NOTE]
-> Modules must be implemented by their respective team members during their assigned handoff phases. No dummy or placeholder RTL is permitted.
-

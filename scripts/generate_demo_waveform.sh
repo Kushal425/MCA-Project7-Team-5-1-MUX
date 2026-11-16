@@ -3,7 +3,7 @@
 # Script: generate_demo_waveform.sh
 # Description: Compiles and executes the 5-request demo simulation to regenerate
 #              the reproducible VCD waveform at docs/evidence/cache_2way_demo.vcd.
-# Author: Kushal (Phase I, Handoff 4)
+# Author: Kushal
 # Usage: ./scripts/generate_demo_waveform.sh
 # ==============================================================================
 

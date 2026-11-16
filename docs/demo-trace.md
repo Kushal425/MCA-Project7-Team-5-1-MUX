@@ -185,5 +185,4 @@ $$\text{Outcomes} = [\, \text{MISS},\, \text{MISS},\, \text{MISS},\, \text{MISS}
 | **Total** | | **2 / 5 (40%)** | **0 / 5 (0%)** | **LRU associativity successfully mitigates ping-pong thrashing** |
 
 > [!NOTE]
-> When the test suite in `tb/` is developed by Kushal and executed with `iverilog`, the automated checker will compare the simulated waveform outputs against this table.
-
+The comparison testbench checks these expected outcomes against both cache implementations. Run `./scripts/run_cache_compare.sh`.

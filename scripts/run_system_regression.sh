@@ -5,7 +5,7 @@
 #              (tb_system_regression) covering reset-after-population, cold
 #              accesses post-reset, back-to-back first-ready-cycle handshakes,
 #              cross-set LRU independence, and direct-mapped regressions.
-# Author: Kushal (Phase I, Handoff 4)
+# Author: Kushal
 # Usage: ./scripts/run_system_regression.sh
 # ==============================================================================
 

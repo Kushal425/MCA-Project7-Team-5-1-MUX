@@ -27,7 +27,7 @@
 //   => 0x40 and 0xC0 map to same set 0 in 2-way (but 2-way holds both ways)
 //   Expected both designs: Miss,Hit,Hit,Hit,Miss,Hit => 4/6 = 67% hit rate
 //
-// Author: Prachee (Phase I, Handoff 3)
+// Author: Prachee
 // Simulator: Icarus Verilog with -g2012
 // ==============================================================================
 

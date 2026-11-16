@@ -9,7 +9,7 @@
 //              5. System-level cross-set LRU independence under interleaved traffic
 //              6. Direct-mapped cache reset, invalidation, and back-to-back streaming regressions
 // Standard: SystemVerilog (iverilog -g2012)
-// Author: Kushal (Phase I, Handoff 4)
+// Author: Kushal
 // ==============================================================================
 
 `timescale 1ns / 1ps

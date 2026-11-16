@@ -7,7 +7,7 @@
 \usepackage{graphicx}
 \usepackage{booktabs}
 \usepackage{url}
-\usepackage{hyperref}
+\usepackage[hidelinks]{hyperref}
 \usepackage{xcolor}
 \usepackage{listings}
 \usepackage{textcomp}
@@ -46,7 +46,7 @@ as a comparison target.  Both designs share a common external interface with
 synchronous active-high reset, a single outstanding request handshake
 protocol, and a combinational lower-memory refill port.  Automated
 simulation across five test suites totaling 618~assertions confirms
-functional correctness.  On a 5-access conflict trace targeting a single
+correct behavior for the tested scenarios.  On a 5-access conflict trace targeting a single
 set, the 2-way design achieves a 40\% hit rate compared to the
 direct-mapped baseline's 0\% hit rate, demonstrating the effectiveness of
 LRU set associativity in mitigating ping-pong thrashing.  A spatial
@@ -80,36 +80,11 @@ automated verification evidence.
 % ============================================================
 \section{Literature Review}
 
-Smith~\cite{smith1982} provided one of the earliest comprehensive surveys
-of cache memory design, establishing the taxonomy of compulsory, capacity,
-and conflict misses that remains foundational to cache analysis.  His work
-demonstrated that increasing associativity reduces conflict misses, with
-diminishing returns beyond 4-way or 8-way configurations.
+Smith~\cite{smith1982} surveys cache memory design and the factors that affect cache performance. Hill~\cite{hill1988} examines the case for direct-mapped caches, emphasizing the relationship between access time and miss rate. Together, these works motivate evaluating both hit behavior and hardware cost when selecting an organization.
 
-Hill~\cite{hill1988} argued that direct-mapped caches could achieve
-performance competitive with set-associative designs under typical
-workloads, primarily because their shorter access times compensate for
-higher miss rates.  However, Hill's analysis acknowledged that
-pathological access patterns---where multiple hot addresses map to the
-same set---expose the direct-mapped cache to severe thrashing.
+Jouppi~\cite{jouppi1990} investigates small fully-associative victim caches and prefetch buffers as additions to direct-mapped caches. This offers another approach to reducing conflict misses. Our prototype instead provides two locations within each indexed set.
 
-Jouppi~\cite{jouppi1990} proposed augmenting direct-mapped caches with
-small fully-associative victim caches to capture conflict misses.  This
-work implicitly demonstrated that conflict misses represent a significant
-performance concern, motivating the set-associative designs that the
-victim cache seeks to approximate.
-
-Przybylski et al.~\cite{przybylski1988} conducted systematic performance
-tradeoff analyses across cache sizes, associativities, and block sizes,
-concluding that 2-way set associativity captures the majority of the
-conflict-miss reduction benefit for a given capacity, making it a
-cost-effective design point.
-
-Al-Zoubi et al.~\cite{al-zoubi2004} evaluated cache replacement policies
-including LRU, FIFO, and random replacement using the SPEC~CPU2000 benchmark
-suite, confirming that LRU consistently outperforms other policies for
-2-way and 4-way configurations.  Their empirical data supports the
-selection of LRU as the replacement policy for our 2-way design.
+Przybylski et al.~\cite{przybylski1988} examine performance tradeoffs in cache design. Al-Zoubi et al.~\cite{al-zoubi2004} compare replacement policies using the SPEC~CPU2000 benchmark suite. These studies motivate documenting the workload and configuration when reporting results. We select LRU to meet the project specification and demonstrate its behavior with controlled access traces.
 
 Patterson and Hennessy~\cite{patterson2017} formalize the Average Memory
 Access Time (AMAT) model as:
@@ -118,7 +93,7 @@ Access Time (AMAT) model as:
 \label{eq:amat}
 \end{equation}
 where $t_{\text{hit}}$ is the hit time, $r_{\text{miss}}$ is the miss
-penalty, and $p_{\text{miss}}$ is the miss rate.  Reducing the miss rate
+rate, and $p_{\text{miss}}$ is the miss penalty.  Reducing the miss rate
 through associativity directly improves AMAT, provided the hit time
 increase from additional comparators is modest.
 
@@ -161,7 +136,7 @@ response delivery.
   31            6 5  4 3  2 1  0
  +---------------+----+----+----+
  |     TAG       |SET |WORD|BYTE|
- |   [31:6]      |[5:4|[3:2|[1:0|
+ |   [31:6]      |5:4 |3:2 |1:0 |
  +---------------+----+----+----+
       26 bits     2b   2b   2b
                 (4 sets)
@@ -189,7 +164,7 @@ or invalid-slot priority logic.
        v
      +-------------------------+
      |     Controller FSM      | -> resp_valid
-     | (IDLE/LOOKUP/FILL/RESP) | -> resp_hit
+     | IDLE/LOOKUP/REFILL/RESP | -> resp_hit
      +------------+------------+ -> resp_data
                   |
             saved_addr
@@ -283,52 +258,51 @@ Trace~A demonstrates the conflict-miss advantage of set associativity: the 2-way
 \section{Individual Contributions}
 
 \begin{enumerate}
-  \item \textbf{Kushal Sarkar} (Scaffold and Verification, Handoffs~1 and~4):
-    Initialized the repository, authored the project brief
-    (\texttt{PROJECT\_BRIEF.md}), interface contracts
-    (\texttt{docs/interface.md}), benchmark trace analysis
-    (\texttt{docs/demo-trace.md}), and project architecture contracts.
-    In Round~2, implemented system regression
-    testbenches (\texttt{tb/tb\_system\_regression.sv}, 344~assertions),
-    the master verification workflow (\texttt{scripts/run\_all.sh}),
+  \item \textbf{Kushal Sarkar} (Specification and Verification):
+    Initialized the repository and authored the interface specification
+    (\path{docs/interface.md}), benchmark trace analysis
+    (\path{docs/demo-trace.md}), and project architecture contracts.
+    Implemented system regression
+    testbenches (\path{tb/tb_system_regression.sv}, 344~assertions),
+    the master verification workflow (\path{scripts/run_all.sh}),
     and the reproducible demo waveform evidence
-    (\texttt{docs/evidence/cache\_2way\_demo.vcd}).
+    (\path{docs/evidence/cache_2way_demo.vcd}).
     Commits: \texttt{3043e05}, \texttt{92dfa5b}, \texttt{3eb612c},
     \texttt{d6cdad6}, \texttt{005cb92}, \texttt{fdb01a1}.
 
-  \item \textbf{Krishna Pramod Dubale} (Storage and LRU, Handoff~2):
+  \item \textbf{Krishna Pramod Dubale} (Storage and LRU):
     Implemented the synthesizable \texttt{cache\_2way\_store} submodule
-    (\texttt{rtl/cache\_2way\_store.v}) with dual-way tag/data arrays,
+    (\path{rtl/cache_2way_store.v}) with dual-way tag/data arrays,
     parallel tag comparators, per-set 1-bit LRU registers, and
     deterministic victim selection.  Authored 51-assertion unit testbench
-    (\texttt{tb/tb\_cache\_2way\_store.sv}) and LRU walkthrough
-    documentation (\texttt{docs/lru\_explanation.md}).
+    (\path{tb/tb_cache_2way_store.sv}) and LRU walkthrough
+    documentation (\path{docs/lru_explanation.md}).
     Commits: \texttt{d76542e}, \texttt{0c1a380}, \texttt{fb36862}.
 
-  \item \textbf{Apoorva Choudhary} (Controller, Handoff~3):
+  \item \textbf{Apoorva Choudhary} (Controller):
     Implemented the top-level \texttt{cache\_2way} controller
-    (\texttt{rtl/cache\_2way.v}) with 4-state FSM, request latching,
+    (\path{rtl/cache_2way.v}) with 4-state FSM, request latching,
     LRU touch and refill datapath integration, and true miss
     classification preservation.  Authored the reusable deterministic
-    memory model (\texttt{tb/mem\_block\_model.v}), 141-assertion
-    integration testbench (\texttt{tb/tb\_cache\_2way.sv}), and
-    architectural documentation (\texttt{docs/architecture.md}).
+    memory model (\path{tb/mem_block_model.v}), 141-assertion
+    integration testbench (\path{tb/tb_cache_2way.sv}), and
+    architectural documentation (\path{docs/architecture.md}).
     Commits: \texttt{7c777f7}, \texttt{ba299cf}, \texttt{9a976c8}.
 
-  \item \textbf{Prachee Dhar} (Comparison, Handoff~4):
+  \item \textbf{Prachee Dhar} (Comparison):
     Implemented the direct-mapped cache baseline
-    (\texttt{rtl/cache\_direct.v}), 30-assertion baseline testbench
-    (\texttt{tb/tb\_cache\_direct.sv}), and the 52-assertion comparative
-    dual-cache trace harness (\texttt{tb/tb\_cache\_compare.sv}).
+    (\path{rtl/cache_direct.v}), 30-assertion baseline testbench
+    (\path{tb/tb_cache_direct.sv}), and the 52-assertion comparative
+    dual-cache trace harness (\path{tb/tb_cache_compare.sv}).
     Authored verified comparison evidence
     (\path{docs/evidence/cache_comparison_evidence.md}).
     Commits: \texttt{fd3d8d7}, \texttt{7188fc6}, \texttt{cc045d7}.
 
-  \item \textbf{Vani Rudra} (Report and Demo Package, Handoff~5):
-    Prepared this IEEE Phase~I progress report (\texttt{report/main.tex},
-    \texttt{report/phase1-report.pdf}), demonstration video
-    materials (\texttt{demo/recording-script.md}, \texttt{demo/presentation.pdf}),
-    Phase~I submission audit checklist (\texttt{docs/phase1-submission.md}), and
+  \item \textbf{Vani Rudra} (Report and Demo Package):
+    Prepared this IEEE Phase~I progress report (\path{report/main.tex},
+    \path{report/phase1-report.pdf}), demonstration video
+    materials,
+    Phase~I submission audit checklist (\path{docs/phase1-submission.md}), and
     final repository navigation.
     Commits: \texttt{693444d}, \texttt{da0765a}, \texttt{c0e872a},
     \texttt{f097865}, \texttt{1486e0d}, \texttt{e13598c}.

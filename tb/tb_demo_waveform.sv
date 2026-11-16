@@ -4,14 +4,16 @@
 //              5-request LRU benchmark demo trace for cache_2way.
 //              Dumps all top-level handshake signals, internal FSM state,
 //              memory refill signals, and cache_2way_store LRU datapath registers.
-//              Outputs execution timeline to stdout for camera-ready reference.
+//              Outputs execution timeline to stdout for waveform inspection.
 // Standard: SystemVerilog (iverilog -g2012)
-// Author: Kushal (Phase I, Handoff 4)
+// Author: Kushal
 // ==============================================================================
 
 `timescale 1ns / 1ps
 
 module tb_demo_waveform;
+
+    initial $timeformat(-9, 0, "", 0);
 
     // Clock and reset
     reg clk;

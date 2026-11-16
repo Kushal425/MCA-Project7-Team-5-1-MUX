@@ -3,7 +3,7 @@
 // Description: Internal storage, parallel tag comparison, word multiplexing,
 //              and per-set 1-bit LRU state tracking for 2-Way Set-Associative Cache.
 // Capacity: 128 bytes total (4 sets x 2 ways x 16 bytes/block).
-// Author: Krishna (Phase I, Handoff 1)
+// Author: Krishna
 // Standard: Synthesizable Verilog-2001
 // ==============================================================================
 

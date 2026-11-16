@@ -8,7 +8,7 @@
 //   addr[3:2]  : Word select within 16-byte block (4 words)
 //   addr[6:4]  : Set index (8 sets -> 3 index bits)
 //   addr[31:7] : Tag (25 bits)
-// Author: Prachee (Phase I, Handoff 3)
+// Author: Prachee
 // Standard: Synthesizable Verilog-2001
 // ==============================================================================
 

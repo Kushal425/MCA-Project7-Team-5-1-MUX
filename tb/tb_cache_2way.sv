@@ -10,7 +10,7 @@
 //              6. Multi-set independence and back-to-back transaction handling
 //              7. Watchdog timeout enforcement
 // Standard: SystemVerilog (iverilog -g2012)
-// Author: Apoorva (Phase I, Handoff 2)
+// Author: Apoorva
 // ==============================================================================
 
 `timescale 1ns / 1ps

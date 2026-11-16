@@ -2,7 +2,7 @@
 # ==============================================================================
 # Script: run_store_unit_test.sh
 # Description: Portable unit test runner for cache_2way_store.
-# Author: Krishna (Phase I, Handoff 1)
+# Author: Krishna
 # ==============================================================================
 
 set -euo pipefail

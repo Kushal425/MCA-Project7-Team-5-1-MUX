@@ -27,8 +27,3 @@ cp main.pdf phase1-report.pdf
 3. Ensure the compiler is set to **pdfLaTeX**.
 4. The IEEEtran class is pre-installed on Overleaf.
 5. Compile and download the resulting PDF as `phase1-report.pdf`.
-
-## Status
-
-- **LaTeX source**: ✅ Complete (`main.tex`, `refs.bib`)
-- **PDF compilation**: ✅ Compiled (`report/phase1-report.pdf`) using `tectonic`.

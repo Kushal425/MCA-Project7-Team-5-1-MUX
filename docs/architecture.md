@@ -1,6 +1,6 @@
 # 2-Way Set-Associative Cache Architecture & Datapath Specification
 
-This document provides a comprehensive architectural breakdown and structural block diagrams for the synthesizable 2-Way Set-Associative Cache (`cache_2way`) and its internal storage submodule (`cache_2way_store`), implemented during Phase I Handoff 2 by **Apoorva**.
+This document provides a comprehensive architectural breakdown and structural block diagrams for the synthesizable 2-Way Set-Associative Cache (`cache_2way`) and its internal storage submodule (`cache_2way_store`).
 
 ---
 

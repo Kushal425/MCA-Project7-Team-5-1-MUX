@@ -2,7 +2,7 @@
 # ==============================================================================
 # Script: run_cache_direct_test.sh
 # Description: Compiles and runs the cache_direct integration testbench.
-# Author: Prachee (Phase I, Handoff 3)
+# Author: Prachee
 # Usage: ./scripts/run_cache_direct_test.sh
 # ==============================================================================
 

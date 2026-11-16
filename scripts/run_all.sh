@@ -10,7 +10,7 @@
 #                5. Targeted system regressions (reset, cold access, ready handshakes, LRU)
 #              Ensures all generated outputs are maintained in ignored locations,
 #              fails on any error, and provides actionable dependency diagnostics.
-# Author: Kushal (Phase I, Handoff 4)
+# Author: Kushal
 # Usage: ./scripts/run_all.sh
 # ==============================================================================
 
@@ -156,8 +156,7 @@ echo "=================================================================="
 
 if [[ $FAILED_SUITES -eq 0 ]]; then
     echo ""
-    echo "SUCCESS: ALL VERIFICATION SUITES COMPLETED WITH ZERO DEFECTS (EXIT 0)"
-    echo "Repository is fully verified and mathematically sound."
+    echo "SUCCESS: ALL FIVE TEST SUITES PASSED (EXIT 0)"
     echo "=================================================================="
     exit 0
 else

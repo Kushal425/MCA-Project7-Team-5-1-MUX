@@ -4,7 +4,7 @@
 # Description: Compiles and runs the shared comparison testbench (tb_cache_compare).
 #              Feeds both cache_2way and cache_direct the same access traces,
 #              reports per-design hit rates, and exits non-zero on mismatch.
-# Author: Prachee (Phase I, Handoff 3)
+# Author: Prachee
 # Usage: ./scripts/run_cache_compare.sh
 # ==============================================================================
 
