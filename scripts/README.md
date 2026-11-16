@@ -4,6 +4,12 @@ This directory is designated for build, linting, and simulation automation scrip
 
 ## Available Scripts
 
+0. `run_all.sh`:
+   - Master full-prototype verification workflow.
+   - Executes all 5 test suites sequentially (unit, integration, direct-mapped, comparison, and system regressions).
+   - Provides toolchain dependency diagnostics and halts on any failure.
+   - Usage from repository root: `./scripts/run_all.sh`
+
 1. `run_store_unit_test.sh`:
    - Portable unit test runner for `cache_2way_store.v` using `iverilog` (-g2012) and `vvp`.
    - Verified: 51/51 checks passing.
