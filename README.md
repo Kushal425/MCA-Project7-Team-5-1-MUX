@@ -23,10 +23,22 @@ Both cache models are written in synthesizable Verilog-2001, targeting an FPGA-f
 | 3 | **Apoorva** | 2-Way Cache Controller FSM & top-level integration (`rtl/cache_2way.v`) | **COMPLETED** |
 | 4 | **Prachee** | Direct-Mapped Cache Baseline (`rtl/cache_direct.v`) & comparison suite | **COMPLETED** |
 | 5 | **Kushal** | System regressions, full-suite automation (`scripts/run_all.sh`), waveform evidence | **COMPLETED** |
-| 6 | **Vani** | IEEE project report (`report/`), prototype demo video (`demo/`), submission packaging | **NEXT UP** |
+| 6 | **Vani** | IEEE project report (`report/`), prototype demo video (`demo/`), submission packaging | **COMPLETED** |
 
 > [!IMPORTANT]
-> **Who Works Next**: **Vani** takes over to author the IEEE Phase I progress report in `report/`, prepare prototype presentation slides and video in `demo/`, and finalize submission packaging.
+> **Phase I Status**: All development and packaging work is complete. See [Phase I Submission Checklist](docs/phase1-submission.md) for remaining human actions (compile PDF, record video, submit course form).
+
+---
+
+## Phase I Deliverables
+
+| Deliverable | Location | Status |
+| :--- | :--- | :---: |
+| IEEE Report (LaTeX source) | [`report/main.tex`](report/main.tex), [`report/refs.bib`](report/refs.bib) | ✅ Overleaf-ready |
+| Report PDF | `report/phase1-report.pdf` | ⏳ Compile pending |
+| Demo Recording Script | [`demo/recording-script.md`](demo/recording-script.md) | ✅ |
+| Demo Video | [`demo/README.md`](demo/README.md) | ⏳ Recording pending |
+| Submission Checklist | [`docs/phase1-submission.md`](docs/phase1-submission.md) | ✅ |
 
 ---
 

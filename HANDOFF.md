@@ -518,3 +518,64 @@ This log tracks all architectural work, implementation milestones, code modifica
      - Verify report PDF compiles cleanly (`report/report.pdf`).
      - Submit GitHub repository URL (`https://github.com/Kushal425/MCA-Project7-Team-5-1-MUX.git`) through the official course form prior to November 16, 2026, 11:59 PM IST.
 - **Next Member**: **Vani (report/demo package)**.
+
+
+---
+
+## Entry 6: IEEE Report, Demonstration Script, and Phase I Submission Packaging
+
+- **Date**: 2026-11-16
+- **Member**: **Vani (report/demo package)** (Phase I Handoff 5)
+- **Work Completed**:
+  1. **IEEE Phase I Progress Report** (`report/main.tex`, `report/refs.bib`):
+     - Authored IEEEtran two-column conference paper covering Abstract, Literature Review (7 primary references: Smith 1982, Hill 1988, Jouppi 1990, Przybylski et al. 1988, Al-Zoubi et al. 2004, Patterson & Hennessy 2017, Hennessy & Patterson 2019), Proposed Solution (architecture, address fields, block diagram, FSM, LRU worked example), Initial Comparison Results, and Individual Contributions.
+     - 9 BibTeX references with IEEE numeric citations, all real and verifiable (DOIs included where available).
+     - Individual contributions grounded in actual commit hashes from Git history and verified handoff entries.
+     - Compilation instructions in `report/BUILD.md`. PDF compilation pending — `pdflatex` not available on build machine; source is Overleaf-ready.
+  2. **Prototype Demo Recording Script** (`demo/recording-script.md`, `demo/README.md`):
+     - Timed 4:30 narration script with spoken lines and corresponding screen actions for each of 6 segments.
+     - Pre-recording setup checklist including toolchain verification, GTKWave signal loading, and screen recording configuration.
+     - Introduces all five members by name: Krishna, Apoorva, Prachee, Kushal, Vani.
+     - Explains architecture with diagram from `docs/architecture.md`.
+     - Demonstrates live `./scripts/run_all.sh` run (618 assertions).
+     - Walks through Requests 3 and 4 in GTKWave waveform (`docs/evidence/cache_2way_demo.vcd`) with exact nanosecond timestamps.
+     - Shows comparative results (40% vs 0% conflict, 66.7% vs 66.7% locality).
+     - Video recording and upload marked pending in `demo/README.md` with step-by-step upload instructions.
+  3. **Phase I Submission Audit** (`docs/phase1-submission.md`):
+     - Maps every rubric requirement to specific evidence files and truthful completion status.
+     - Verifies authentic Git history for all 5 members with distinct commit hashes.
+     - Records repository URL: `https://github.com/Kushal425/MCA-Project7-Team-5-1-MUX.git`.
+     - Deadline: November 16, 2026, 11:59 PM IST.
+     - Course-form submission marked pending (not confirmed).
+     - Lists 4 remaining human actions: compile PDF, record video, add video link, submit course form.
+  4. **Repository Navigation** (`README.md`):
+     - Updated Vani's pipeline status to COMPLETED.
+     - Added Phase I Deliverables table linking report source, demo script, submission checklist.
+- **Changed Files**:
+  - `report/main.tex`
+  - `report/refs.bib`
+  - `report/BUILD.md`
+  - `demo/recording-script.md`
+  - `demo/README.md`
+  - `docs/phase1-submission.md`
+  - `README.md`
+  - `HANDOFF.md`
+- **Checks Actually Run**:
+  - `git log --format='%h %an <%ae> %s' --all`: Verified all 15 prior commits with authentic Git identities for Kushal (6 commits), Krishna (3), Apoorva (3), and Prachee (3).
+  - `git status`: Confirmed clean working tree before starting.
+  - `git fetch origin`: Synchronized with `origin/main` (`fdb01a1`).
+  - `which pdflatex`: Confirmed `pdflatex` not available; marked PDF pending.
+  - Repository tree listing: Verified all required RTL, testbench, script, evidence, and documentation files present.
+  - Verified `report/main.tex` uses `\documentclass[conference]{IEEEtran}` with correct sections.
+  - Verified all 9 BibTeX references are real publications with verifiable DOIs or URLs.
+  - Verified `demo/recording-script.md` totals 4:30 across 6 timed segments.
+  - Verified `docs/phase1-submission.md` maps all rubric items with honest statuses.
+- **Known Limitations**:
+  - Report PDF not compiled — requires `pdflatex` + `bibtex` or Overleaf.
+  - Demo video not recorded — script and checklist provided for team recording.
+  - Course-form submission not confirmed — URL and deadline documented.
+- **Next Actions (Human)**:
+  1. Compile `report/phase1-report.pdf` via Overleaf (upload `main.tex` + `refs.bib`).
+  2. Record demo video following `demo/recording-script.md` (~4:30).
+  3. Upload video and add link to `demo/README.md`.
+  4. Submit repository URL via official course form before November 16, 2026, 11:59 PM IST.
