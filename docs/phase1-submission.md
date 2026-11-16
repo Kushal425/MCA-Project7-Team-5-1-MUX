@@ -52,11 +52,11 @@
 
 | Team Member | Git Identity | Commits | Files Touched |
 |:---|:---|:---:|:---|
-| **Kushal Sarkar** | `Kushal425 <kushalsarkar457@gmail.com>` | 6 (`3043e05`, `92dfa5b`, `3eb612c`, `d6cdad6`, `005cb92`, `fdb01a1`) | `PROJECT_BRIEF.md`, `AGENTS.md`, `README.md`, `.gitignore`, `docs/*`, `tb/tb_system_regression.sv`, `tb/tb_demo_waveform.sv`, `scripts/run_all.sh`, `scripts/run_system_regression.sh`, `scripts/generate_demo_waveform.sh`, `docs/evidence/*` |
+| **Kushal Sarkar** | `Kushal425 <kushalsarkar457@gmail.com>` | 7+ (`3043e05`, `92dfa5b`, `3eb612c`, `d6cdad6`, `005cb92`, `fdb01a1`, `d519fc3`, ...) | Repository scaffold, `README.md`, `.gitignore`, `docs/*`, `tb/tb_system_regression.sv`, `tb/tb_demo_waveform.sv`, `scripts/run_all.sh`, `scripts/run_system_regression.sh`, `scripts/generate_demo_waveform.sh`, `docs/evidence/*`, final verification & submission packaging |
 | **Krishna Pramod Dubale** | `Krishna Pramod Dubale <krishnapramoddubale@...>` | 3 (`d76542e`, `0c1a380`, `fb36862`) | `rtl/cache_2way_store.v`, `tb/tb_cache_2way_store.sv`, `scripts/run_store_unit_test.sh`, `docs/lru_explanation.md` |
 | **Apoorva Choudhary** | `Apoorv Choudhary <apoorvachoudhary506@gmail.com>` | 3 (`7c777f7`, `ba299cf`, `9a976c8`) | `rtl/cache_2way.v`, `tb/mem_block_model.v`, `tb/tb_cache_2way.sv`, `scripts/run_cache_2way_integration_test.sh`, `docs/architecture.md` |
 | **Prachee Dhar** | `pracheedhar <prachee.dhar2024@nst.rishihood.edu.in>` | 3 (`fd3d8d7`, `7188fc6`, `cc045d7`) | `rtl/cache_direct.v`, `tb/tb_cache_direct.sv`, `tb/tb_cache_compare.sv`, `tb/traces/*`, `scripts/run_cache_direct_test.sh`, `scripts/run_cache_compare.sh`, `docs/evidence/cache_comparison_evidence.md`, `docs/evidence/cache_comparison_sim.log` |
-| **Vani Rudra** | `vanosaur <vanirudra0914@gmail.com>` | 3+ (this session) | `report/main.tex`, `report/refs.bib`, `report/BUILD.md`, `demo/recording-script.md`, `demo/README.md`, `docs/phase1-submission.md`, `HANDOFF.md`, `README.md` |
+| **Vani Rudra** | `vanosaur <vanirudra0914@gmail.com>` | 6 (`693444d`, `da0765a`, `c0e872a`, `f097865`, `1486e0d`, `e13598c`) | `report/main.tex`, `report/refs.bib`, `report/phase1-report.pdf`, `report/BUILD.md`, `demo/recording-script.md`, `demo/presentation.pdf`, `demo/README.md`, `docs/phase1-submission.md`, `README.md` |
 
 All five team members have authentic, individual Git contributions with distinct commit hashes.
 
@@ -64,10 +64,25 @@ All five team members have authentic, individual Git contributions with distinct
 
 ## 4. Summary of Remaining Human Actions
 
-| # | Action | Owner | Deadline |
-|:---:|:---|:---|:---|
-| 1 | **Record demo video**: Follow [`demo/recording-script.md`](../demo/recording-script.md), record ~4:30 video, upload to YouTube/Drive | Vani + team | Nov 16, 2026 11:59 PM IST |
-| 2 | **Add video link**: Update [`demo/README.md`](../demo/README.md) with permanent video URL, commit and push | Vani | Nov 16, 2026 11:59 PM IST |
-| 3 | **Submit course form**: Enter repository URL `https://github.com/Kushal425/MCA-Project7-Team-5-1-MUX.git` in the official course submission form | Any member | Nov 16, 2026 11:59 PM IST |
+| # | Action | Owner | Deadline | Status |
+|:---:|:---|:---|:---|:---:|
+| 1 | **Verify video permissions**: Confirm Google Drive folder sharing settings are viewable by instructors | Team | Nov 16, 2026 11:59 PM IST | ⏳ Human check |
+| 2 | **Submit course form**: Enter repository URL `https://github.com/Kushal425/MCA-Project7-Team-5-1-MUX.git` in the official course submission form | Any member | Nov 16, 2026 11:59 PM IST | ⏳ Human check |
 
-> **Phase I is NOT yet submitted** — course-form submission has not been confirmed.
+> **Course-Form Submission Notice**: The repository, reports, evidence, and video links are complete. Submitting the repository link via the official course submission form remains the final human submission step.
+
+---
+
+## 5. Phase II Forward Roadmap (For Architectural Context)
+
+Phase II constitutes 70% of the overall course grade. The completed Phase I foundation establishes forward compatibility for Phase II requirements:
+
+1. **Extended IEEE Project Report**:
+   - Expansion of Results & Discussion to include synthetic and benchmark traces (e.g., matrix multiplication, FFT memory patterns).
+   - FPGA synthesis resource utilization (LUTs, BRAMs, register slices) and maximum operating frequency ($F_{\max}$) comparison on target FPGA toolchains (e.g., Vivado / Quartus).
+   - Conclusions, architectural recommendations, and future work.
+2. **Continued Repository Maintenance**:
+   - Maintain continuous, multi-author Git commit history throughout Phase II development.
+3. **Final Project Oral Defense / Interview**:
+   - Oral defense evaluating architecture, RTL trade-offs, FSM state diagrams, LRU mechanics, and verification methodology.
+   - All five team members must be prepared to articulate both their individual modules and the end-to-end cache subsystem.
