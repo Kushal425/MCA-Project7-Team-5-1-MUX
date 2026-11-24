@@ -17,7 +17,7 @@ This directory is designated for build, linting, and simulation automation scrip
 
 2. `run_cache_2way_integration_test.sh`:
    - Portable integration test runner for top-level `cache_2way.v` integrated with `cache_2way_store.v` and `mem_block_model.v`.
-   - Verified: 141/141 checks passing.
+   - Verified: 276/276 checks passing.
    - Usage from repository root: `./scripts/run_cache_2way_integration_test.sh`
 
 3. `run_cache_direct_test.sh`:
