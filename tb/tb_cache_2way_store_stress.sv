@@ -86,6 +86,36 @@ module tb_cache_2way_store_stress;
     integer check_count = 0;
     integer step_id     = 0;
 
+    // Functional Coverage Counters
+    integer cov_hit_way0            = 0;
+    integer cov_hit_way1            = 0;
+    integer cov_word_w0 [0:3];
+    integer cov_word_w1 [0:3];
+    integer cov_fill_empty_w0       = 0;
+    integer cov_fill_empty_w1       = 0;
+    integer cov_evict_w0            = 0;
+    integer cov_evict_w1            = 0;
+    integer cov_touch_lru_to_mru_w0 = 0;
+    integer cov_touch_lru_to_mru_w1 = 0;
+    integer cov_touch_mru_noop      = 0;
+    integer cov_touch_miss_noop     = 0;
+    integer cov_comb_lookup_no_en   = 0;
+    integer cov_reset_after_fill    = 0;
+    integer cov_set_fill [0:3];
+    integer cov_set_touch [0:3];
+
+    task automatic init_coverage();
+        integer i;
+        begin
+            for (i = 0; i < 4; i = i + 1) begin
+                cov_word_w0[i]   = 0;
+                cov_word_w1[i]   = 0;
+                cov_set_fill[i]  = 0;
+                cov_set_touch[i] = 0;
+            end
+        end
+    endtask
+
     function automatic [31:0] next_rand();
         reg [31:0] x;
         begin
@@ -213,18 +243,28 @@ module tb_cache_2way_store_stress;
         reg         tmp_way;
         begin
             if (do_rst) begin
+                if ((sb_count[0] > 0) || (sb_count[1] > 0) || (sb_count[2] > 0) || (sb_count[3] > 0)) begin
+                    cov_reset_after_fill = cov_reset_after_fill + 1;
+                end
                 sb_reset();
             end else if (do_fill) begin
                 s = target_addr[5:4];
                 t = target_addr[31:6];
+                cov_set_fill[s] = cov_set_fill[s] + 1;
 
                 if (sb_count[s] == 0) begin
+                    cov_fill_empty_w0 = cov_fill_empty_w0 + 1;
                     sb_valid[s][0] = 1'b1;
                     sb_tag[s][0]   = t;
                     sb_data[s][0]  = new_block;
                     sb_way[s][0]   = 1'b0;
                     sb_count[s]    = 1;
                 end else if (sb_count[s] == 1) begin
+                    if (sb_way[s][0] == 1'b0) begin
+                        cov_fill_empty_w1 = cov_fill_empty_w1 + 1;
+                    end else begin
+                        cov_fill_empty_w0 = cov_fill_empty_w0 + 1;
+                    end
                     sb_valid[s][1] = 1'b1;
                     sb_tag[s][1]   = t;
                     sb_data[s][1]  = new_block;
@@ -233,6 +273,11 @@ module tb_cache_2way_store_stress;
                 end else begin
                     // Evict LRU entry [0]; shift MRU [1] -> [0]; place new block at MRU [1]
                     v_way = sb_way[s][0];
+                    if (v_way == 1'b0) begin
+                        cov_evict_w0 = cov_evict_w0 + 1;
+                    end else begin
+                        cov_evict_w1 = cov_evict_w1 + 1;
+                    end
                     sb_valid[s][0] = sb_valid[s][1];
                     sb_tag[s][0]   = sb_tag[s][1];
                     sb_data[s][0]  = sb_data[s][1];
@@ -246,7 +291,13 @@ module tb_cache_2way_store_stress;
             end else if (do_touch) begin
                 s = target_addr[5:4];
                 t = target_addr[31:6];
+                cov_set_touch[s] = cov_set_touch[s] + 1;
                 if ((sb_count[s] == 2) && sb_valid[s][0] && (sb_tag[s][0] == t)) begin
+                    if (sb_way[s][0] == 1'b0) begin
+                        cov_touch_lru_to_mru_w0 = cov_touch_lru_to_mru_w0 + 1;
+                    end else begin
+                        cov_touch_lru_to_mru_w1 = cov_touch_lru_to_mru_w1 + 1;
+                    end
                     // LRU entry touched: promote [0] to MRU [1], demote [1] to LRU [0]
                     tmp_valid      = sb_valid[s][0];
                     tmp_tag        = sb_tag[s][0];
@@ -262,8 +313,12 @@ module tb_cache_2way_store_stress;
                     sb_tag[s][1]   = tmp_tag;
                     sb_data[s][1]  = tmp_data;
                     sb_way[s][1]   = tmp_way;
+                end else if (((sb_count[s] == 2) && sb_valid[s][1] && (sb_tag[s][1] == t)) ||
+                           ((sb_count[s] == 1) && sb_valid[s][0] && (sb_tag[s][0] == t))) begin
+                    cov_touch_mru_noop = cov_touch_mru_noop + 1;
+                end else begin
+                    cov_touch_miss_noop = cov_touch_miss_noop + 1;
                 end
-                // Touch on MRU [1], lone entry, or miss does not alter order
             end
         end
     endtask
@@ -287,9 +342,25 @@ module tb_cache_2way_store_stress;
         reg [31:0] exp_read_word;
         reg        exp_victim_way;
         reg [1:0]  s;
+        reg [1:0]  wsel;
         begin
-            s = target_addr[5:4];
+            s    = target_addr[5:4];
+            wsel = target_addr[3:2];
             sb_lookup(target_addr, exp_hit, exp_hit_way, exp_read_word, exp_victim_way);
+
+            if (!rst && !touch_en && !fill_en) begin
+                cov_comb_lookup_no_en = cov_comb_lookup_no_en + 1;
+            end
+
+            if (exp_hit) begin
+                if (exp_hit_way == 1'b0) begin
+                    cov_hit_way0      = cov_hit_way0 + 1;
+                    cov_word_w0[wsel] = cov_word_w0[wsel] + 1;
+                end else begin
+                    cov_hit_way1      = cov_hit_way1 + 1;
+                    cov_word_w1[wsel] = cov_word_w1[wsel] + 1;
+                end
+            end
 
             check_count = check_count + 4;
             if ((hit        !== exp_hit)        ||
@@ -444,6 +515,140 @@ module tb_cache_2way_store_stress;
     endtask
 
     // --------------------------------------------------------------------------
+    // Targeted Coverage Suite
+    // --------------------------------------------------------------------------
+    task automatic run_targeted_coverage_suite();
+        integer s, w;
+        reg [25:0] t0, t1, t2, t3, t_miss;
+        begin
+            $display("[PHASE 1] Targeted Coverage Cases (4 sets x 2 ways x 4 word offsets)");
+
+            // Case 1: Empty-way priority (0 -> 1) and all 4 word offsets across both ways in all 4 sets
+            exec_reset();
+            for (s = 0; s < NUM_SETS; s = s + 1) begin
+                t0 = pool_tag(s[1:0], 0);
+                t1 = pool_tag(s[1:0], 1);
+
+                // Cold miss lookup without enable -> victim must be Way 0
+                exec_lookup_only(t0, s[1:0], 2'b00);
+
+                // First fill -> Way 0; subsequent victim must be empty Way 1
+                exec_fill(t0, s[1:0], 2'b00);
+                for (w = 0; w < 4; w = w + 1) begin
+                    exec_lookup_only(t0, s[1:0], w[1:0]);
+                end
+
+                // Second fill -> Way 1; set now full, Way 0 is LRU victim
+                exec_fill(t1, s[1:0], 2'b00);
+                for (w = 0; w < 4; w = w + 1) begin
+                    exec_lookup_only(t1, s[1:0], w[1:0]);
+                end
+            end
+
+            // Case 2: Both victim directions, touch-on-LRU, touch-on-MRU no-op, touch-on-miss no-op
+            t0     = pool_tag(2'd0, 0); // Currently LRU in Set 0 (Way 0)
+            t1     = pool_tag(2'd0, 1); // Currently MRU in Set 0 (Way 1)
+            t2     = pool_tag(2'd0, 2);
+            t3     = pool_tag(2'd0, 3);
+            t_miss = pool_tag(2'd0, 5);
+
+            // Touch already-MRU Way 1 (victim stays Way 0) and touch miss tag (victim stays Way 0)
+            exec_touch(t1, 2'd0, 2'b10);
+            exec_touch(t_miss, 2'd0, 2'b01);
+
+            // Evict Way 0 (t0 evicted, t1 preserved in Way 1, t2 enters Way 0 as MRU)
+            exec_fill(t2, 2'd0, 2'b11);
+            exec_lookup_only(t0, 2'd0, 2'b00); // Verify t0 evicted
+            exec_lookup_only(t1, 2'd0, 2'b11); // Verify t1 preserved on Way 1
+
+            // Touch Way 1 (t1, currently LRU) -> victim flips to Way 0; then touch Way 0 (t2) -> flips to Way 1
+            exec_touch(t1, 2'd0, 2'b01);
+            exec_touch(t2, 2'd0, 2'b10);
+
+            // Evict Way 1 (t1 evicted, t2 preserved in Way 0, t3 enters Way 1 as MRU)
+            exec_fill(t3, 2'd0, 2'b00);
+            exec_lookup_only(t1, 2'd0, 2'b00); // Verify t1 evicted
+            exec_lookup_only(t2, 2'd0, 2'b10); // Verify t2 preserved on Way 0
+
+            // Case 3: Cross-set independence (all 4 sets populated, mutate Sets 1 & 3, verify Sets 0 & 2)
+            exec_touch(pool_tag(2'd1, 0), 2'd1, 2'b01); // Flip Set 1 victim to Way 1
+            exec_fill(pool_tag(2'd1, 2), 2'd1, 2'b10);  // Evict Way 1 in Set 1
+            exec_fill(pool_tag(2'd3, 2), 2'd3, 2'b11);  // Evict Way 0 in Set 3
+            @(negedge clk);
+            touch_en = 1'b0;
+            fill_en  = 1'b0;
+            sweep_all_sets_combinational();
+
+            // Case 4: Combinational lookups within a single cycle (no clock edge, no enable)
+            @(negedge clk);
+            touch_en = 1'b0;
+            fill_en  = 1'b0;
+            for (w = 0; w < 4; w = w + 1) begin
+                addr = make_addr(pool_tag(2'd2, 0), 2'd2, w[1:0]);
+                #1;
+                verify_combinational("same_cycle_comb_w0", addr);
+                addr = make_addr(pool_tag(2'd2, 1), 2'd2, w[1:0]);
+                #1;
+                verify_combinational("same_cycle_comb_w1", addr);
+            end
+            addr = make_addr(pool_tag(2'd2, 5), 2'd2, 2'b00);
+            #1;
+            verify_combinational("same_cycle_comb_miss", addr);
+
+            // Case 5: Reset after full 4-set / 8-way population & clean post-reset refill
+            exec_reset();
+            for (s = 0; s < NUM_SETS; s = s + 1) begin
+                exec_lookup_only(pool_tag(s[1:0], 0), s[1:0], 2'b00);
+                exec_lookup_only(pool_tag(s[1:0], 1), s[1:0], 2'b00);
+                exec_lookup_only(pool_tag(s[1:0], 2), s[1:0], 2'b00);
+                exec_fill(pool_tag(s[1:0], 4), s[1:0], 2'b01);
+            end
+        end
+    endtask
+
+    task automatic report_and_assert_coverage();
+        integer i;
+        integer missing_bins;
+        begin
+            missing_bins = 0;
+            $display("------------------------------------------------------------------");
+            $display("Functional Coverage Report:");
+            $display("  Hit Way 0 / Way 1          : %0d / %0d", cov_hit_way0, cov_hit_way1);
+            $display("  Way 0 Word Offsets [0..3]  : %0d, %0d, %0d, %0d",
+                     cov_word_w0[0], cov_word_w0[1], cov_word_w0[2], cov_word_w0[3]);
+            $display("  Way 1 Word Offsets [0..3]  : %0d, %0d, %0d, %0d",
+                     cov_word_w1[0], cov_word_w1[1], cov_word_w1[2], cov_word_w1[3]);
+            $display("  Empty-Way Fills (W0 / W1)  : %0d / %0d", cov_fill_empty_w0, cov_fill_empty_w1);
+            $display("  LRU Evictions   (W0 / W1)  : %0d / %0d", cov_evict_w0, cov_evict_w1);
+            $display("  Touch LRU->MRU  (W0 / W1)  : %0d / %0d", cov_touch_lru_to_mru_w0, cov_touch_lru_to_mru_w1);
+            $display("  Touch No-Op (MRU / Miss)   : %0d / %0d", cov_touch_mru_noop, cov_touch_miss_noop);
+            $display("  Comb Lookups (no enable)   : %0d", cov_comb_lookup_no_en);
+            $display("  Reset After Fills          : %0d", cov_reset_after_fill);
+            $display("  Per-Set Fills   [0..3]     : %0d, %0d, %0d, %0d",
+                     cov_set_fill[0], cov_set_fill[1], cov_set_fill[2], cov_set_fill[3]);
+            $display("  Per-Set Touches [0..3]     : %0d, %0d, %0d, %0d",
+                     cov_set_touch[0], cov_set_touch[1], cov_set_touch[2], cov_set_touch[3]);
+
+            if (cov_hit_way0 == 0 || cov_hit_way1 == 0) missing_bins = missing_bins + 1;
+            for (i = 0; i < 4; i = i + 1) begin
+                if (cov_word_w0[i] == 0)   missing_bins = missing_bins + 1;
+                if (cov_word_w1[i] == 0)   missing_bins = missing_bins + 1;
+                if (cov_set_fill[i] == 0)  missing_bins = missing_bins + 1;
+                if (cov_set_touch[i] == 0) missing_bins = missing_bins + 1;
+            end
+            if (cov_fill_empty_w0 == 0 || cov_fill_empty_w1 == 0) missing_bins = missing_bins + 1;
+            if (cov_evict_w0 == 0 || cov_evict_w1 == 0)           missing_bins = missing_bins + 1;
+            if (cov_touch_lru_to_mru_w0 == 0 || cov_touch_lru_to_mru_w1 == 0) missing_bins = missing_bins + 1;
+            if (cov_touch_mru_noop == 0 || cov_touch_miss_noop == 0) missing_bins = missing_bins + 1;
+            if (cov_comb_lookup_no_en == 0 || cov_reset_after_fill == 0) missing_bins = missing_bins + 1;
+
+            if (missing_bins != 0) begin
+                $fatal(1, "Coverage check failed: %0d required bins had zero hits", missing_bins);
+            end
+        end
+    endtask
+
+    // --------------------------------------------------------------------------
     // Randomized Fixed-Seed Stress Sequence
     // --------------------------------------------------------------------------
     task automatic run_random_stress(input integer num_steps);
@@ -517,15 +722,20 @@ module tb_cache_2way_store_stress;
         touch_en   = 1'b0;
         fill_en    = 1'b0;
         fill_block = 128'd0;
+        init_coverage();
         sb_reset();
 
         $display("==================================================================");
         $display("Starting Independent Stress Verification: cache_2way_store");
         $display("==================================================================");
 
+        run_targeted_coverage_suite();
+        $display("[PHASE 2] Fixed-Seed Randomized Stress (%0d steps)", STRESS_STEPS);
         exec_reset();
         run_random_stress(STRESS_STEPS);
         sweep_all_sets_combinational();
+
+        report_and_assert_coverage();
 
         $display("==================================================================");
         $display("Stress Verification Summary:");
