@@ -10,27 +10,12 @@
 //              hand-checked vectors and an independent reference model.
 //              Verifies response data, hit/miss outcomes, and transaction counts.
 //
-// TRACE A -- Conflict Trace (5 addresses all mapping to Set 0):
-//   Trace file: tb/traces/conflict_trace.hex
-//   Addresses: 0x00000000, 0x00000080, 0x00000000, 0x00000100, 0x00000000
-//   Address mapping:
-//     2-way  : set = addr[5:4] = 2'b00 (Set 0 for all three distinct blocks)
-//     direct : set = addr[6:4] = 3'b000 (Set 0 for all three distinct blocks)
-//   Expected 2way  : Miss, Miss, HIT, Miss, HIT  => 2/5 = 40% hit rate
-//   Expected direct: Miss, Miss, Miss, Miss, Miss => 0/5 =  0% hit rate
-//
-// TRACE B -- Within-Block Locality Trace:
-//   Trace file: tb/traces/locality_trace.hex
-//   Addresses: 0x00000040, 0x00000044, 0x00000048, 0x0000004C, 0x000000C0, 0x000000C4
-//   0x40 mapping:
-//     2-way  : set = addr[5:4] = 2'b00 (Set 0), tag = addr[31:6] = 1
-//     direct : set = addr[6:4] = 3'b100 (Set 4), tag = addr[31:7] = 0
-//   0xC0 mapping:
-//     2-way  : set = addr[5:4] = 2'b00 (Set 0), tag = addr[31:6] = 3
-//     direct : set = addr[6:4] = 3'b100 (Set 4), tag = addr[31:7] = 1
-//   => Note: 0x40 and 0xC0 both map to direct set 4, with tags 0 and 1 respectively.
-//   => In 2-way, 0x40 and 0xC0 both map to set 0, with tags 1 and 3 respectively (held in ways 0 and 1).
-//   Expected both designs: Miss, Hit, Hit, Hit, Miss, Hit => 4/6 = 67% hit rate
+// Traces:
+//   TRACE A: 5-Access Conflict Trace (tb/traces/conflict_trace.hex)
+//   TRACE B: 6-Access Within-Block Locality Trace (tb/traces/locality_trace.hex)
+//   TRACE C: 16-Access Extended 2-Block Conflict Trace (tb/traces/conflict_long_trace.hex)
+//   TRACE D: 32-Access Sequential Locality Trace (tb/traces/sequential_trace.hex)
+//   TRACE E: 30-Access Mapping-Sensitive 3-Block Cycle (tb/traces/mapping_sensitive_trace.hex)
 //
 // Author: Prachee
 // Simulator: Icarus Verilog with -g2012
@@ -49,7 +34,7 @@ module tb_cache_compare;
 
     // Watchdog
     initial begin
-        #500000;
+        #1000000;
         $display("[FATAL] Watchdog timeout -- simulation killed.");
         $finish(1);
     end
@@ -494,6 +479,131 @@ module tb_cache_compare;
     endtask
 
     // =========================================================================
+    // TRACE C: Extended 2-Block Conflict Trace (Loaded from disk)
+    // =========================================================================
+    task run_trace_C;
+        integer trace_len, i;
+        logic exp_tw_hit, exp_dm_hit;
+        reg [31:0] exp_tw_data, exp_dm_data;
+        string lbl;
+        begin
+            tw_hits = 0; tw_misses = 0;
+            dm_hits = 0; dm_misses = 0;
+
+            $display("\n--- TRACE C: Extended 2-Block Conflict Trace ---");
+            load_trace("tb/traces/conflict_long_trace.hex", trace_len);
+            $display("    Addresses loaded: %0d", trace_len);
+            $display("    0x000 and 0x080 alternating 16 times.");
+            $display("    Expected 2way : 14 hits / 16 accesses (87.5%%)");
+            $display("    Expected direct: 0 hits / 16 accesses (0.0%%)");
+            reset_both;
+
+            for (i = 0; i < trace_len; i = i + 1) begin
+                ref_tw_step(trace_mem[i], exp_tw_hit, exp_tw_data);
+                ref_dm_step(trace_mem[i], exp_dm_hit, exp_dm_data);
+                $sformat(lbl, "C.%0d addr=0x%08h", i+1, trace_mem[i]);
+                run_one_access(trace_mem[i], exp_tw_hit, exp_dm_hit, exp_tw_data, lbl);
+            end
+
+            $display("\n  TRACE C Summary:");
+            $display("    2-Way  : %0d hits / %0d accesses = %0d%% hit rate",
+                     tw_hits, tw_hits+tw_misses,
+                     (tw_hits * 100) / (tw_hits + tw_misses));
+            $display("    Direct : %0d hits / %0d accesses = %0d%% hit rate",
+                     dm_hits, dm_hits+dm_misses,
+                     (dm_hits * 100) / (dm_hits + dm_misses));
+
+            check("TRACE C: 2way hits == 14",    tw_hits   === 14);
+            check("TRACE C: 2way misses == 2",   tw_misses === 2);
+            check("TRACE C: direct hits == 0",   dm_hits   === 0);
+            check("TRACE C: direct misses == 16",dm_misses === 16);
+        end
+    endtask
+
+    // =========================================================================
+    // TRACE D: Sequential Locality Trace (Loaded from disk)
+    // =========================================================================
+    task run_trace_D;
+        integer trace_len, i;
+        logic exp_tw_hit, exp_dm_hit;
+        reg [31:0] exp_tw_data, exp_dm_data;
+        string lbl;
+        begin
+            tw_hits = 0; tw_misses = 0;
+            dm_hits = 0; dm_misses = 0;
+
+            $display("\n--- TRACE D: Sequential Locality Trace ---");
+            load_trace("tb/traces/sequential_trace.hex", trace_len);
+            $display("    Addresses loaded: %0d", trace_len);
+            $display("    32 accesses across 8 blocks (128 bytes full capacity).");
+            $display("    Expected both: 24 hits / 32 accesses (75.0%%)");
+            reset_both;
+
+            for (i = 0; i < trace_len; i = i + 1) begin
+                ref_tw_step(trace_mem[i], exp_tw_hit, exp_tw_data);
+                ref_dm_step(trace_mem[i], exp_dm_hit, exp_dm_data);
+                $sformat(lbl, "D.%0d addr=0x%08h", i+1, trace_mem[i]);
+                run_one_access(trace_mem[i], exp_tw_hit, exp_dm_hit, exp_tw_data, lbl);
+            end
+
+            $display("\n  TRACE D Summary:");
+            $display("    2-Way  : %0d hits / %0d accesses = %0d%% hit rate",
+                     tw_hits, tw_hits+tw_misses,
+                     (tw_hits * 100) / (tw_hits + tw_misses));
+            $display("    Direct : %0d hits / %0d accesses = %0d%% hit rate",
+                     dm_hits, dm_hits+dm_misses,
+                     (dm_hits * 100) / (dm_hits + dm_misses));
+
+            check("TRACE D: 2way hits == 24",    tw_hits   === 24);
+            check("TRACE D: 2way misses == 8",   tw_misses === 8);
+            check("TRACE D: direct hits == 24",  dm_hits   === 24);
+            check("TRACE D: direct misses == 8", dm_misses === 8);
+        end
+    endtask
+
+    // =========================================================================
+    // TRACE E: Mapping-Sensitive 3-Block Cycle Trace (Loaded from disk)
+    // =========================================================================
+    task run_trace_E;
+        integer trace_len, i;
+        logic exp_tw_hit, exp_dm_hit;
+        reg [31:0] exp_tw_data, exp_dm_data;
+        string lbl;
+        begin
+            tw_hits = 0; tw_misses = 0;
+            dm_hits = 0; dm_misses = 0;
+
+            $display("\n--- TRACE E: Mapping-Sensitive 3-Block Cycle Trace ---");
+            load_trace("tb/traces/mapping_sensitive_trace.hex", trace_len);
+            $display("    Addresses loaded: %0d", trace_len);
+            $display("    0x000, 0x040, 0x080 repeated 10 times.");
+            $display("    2-Way: all 3 map to Set 0 -> 0 hits / 30 accesses (0.0%%)");
+            $display("    Direct: 0x040 maps to Set 4 -> 9 hits / 30 accesses (30.0%%)");
+            reset_both;
+
+            for (i = 0; i < trace_len; i = i + 1) begin
+                ref_tw_step(trace_mem[i], exp_tw_hit, exp_tw_data);
+                ref_dm_step(trace_mem[i], exp_dm_hit, exp_dm_data);
+                $sformat(lbl, "E.%0d addr=0x%08h", i+1, trace_mem[i]);
+                run_one_access(trace_mem[i], exp_tw_hit, exp_dm_hit, exp_tw_data, lbl);
+            end
+
+            $display("\n  TRACE E Summary:");
+            $display("    2-Way  : %0d hits / %0d accesses = %0d%% hit rate",
+                     tw_hits, tw_hits+tw_misses,
+                     (tw_hits * 100) / (tw_hits + tw_misses));
+            $display("    Direct : %0d hits / %0d accesses = %0d%% hit rate",
+                     dm_hits, dm_hits+dm_misses,
+                     (dm_hits * 100) / (dm_hits + dm_misses));
+
+            check("TRACE E: 2way hits == 0",     tw_hits   === 0);
+            check("TRACE E: 2way misses == 30",  tw_misses === 30);
+            check("TRACE E: direct hits == 9",   dm_hits   === 9);
+            check("TRACE E: direct misses == 21",dm_misses === 21);
+        end
+    endtask
+
+    // =========================================================================
     // MAIN
     // =========================================================================
     initial begin
@@ -510,6 +620,9 @@ module tb_cache_compare;
 
         run_trace_A;
         run_trace_B;
+        run_trace_C;
+        run_trace_D;
+        run_trace_E;
 
         $display("\n==================================================================");
         $display("Comparative Verification Complete: %0d Passed, %0d Failed",

@@ -1,0 +1,32 @@
+// ==============================================================================
+// Trace C: 16-Access Extended Two-Block Conflict Trace
+// Evaluates sustained conflict thrashing between two addresses mapping to
+// Set 0 in both designs (0x00000000 and 0x00000080).
+//
+// Address Breakdown:
+//   Address      2-Way [5:4] (Tag [31:6])    Direct [6:4] (Tag [31:7])
+//   0x00000000   Set 0 (Tag 0x0000000)       Set 0 (Tag 0x0000000)
+//   0x00000080   Set 0 (Tag 0x0000002)       Set 0 (Tag 0x0000001)
+//
+// Expected Outcomes (16 alternating accesses):
+//   2-Way Set-Associative: 2 cold misses, followed by 14 consecutive hits.
+//     Hits: 14 / 16 (87.5% hit rate). Both blocks reside concurrently in Ways 0 & 1.
+//   Direct-Mapped Baseline: 16 consecutive misses (0 hits).
+//     Hits: 0 / 16 (0.0% hit rate). Every access evicts the alternative block.
+// ==============================================================================
+00000000
+00000080
+00000000
+00000080
+00000000
+00000080
+00000000
+00000080
+00000000
+00000080
+00000000
+00000080
+00000000
+00000080
+00000000
+00000080

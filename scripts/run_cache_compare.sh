@@ -36,6 +36,9 @@ REQUIRED_FILES=(
     "tb/tb_cache_compare.sv"
     "tb/traces/conflict_trace.hex"
     "tb/traces/locality_trace.hex"
+    "tb/traces/conflict_long_trace.hex"
+    "tb/traces/sequential_trace.hex"
+    "tb/traces/mapping_sensitive_trace.hex"
 )
 for f in "${REQUIRED_FILES[@]}"; do
     if [[ ! -f "$f" ]]; then

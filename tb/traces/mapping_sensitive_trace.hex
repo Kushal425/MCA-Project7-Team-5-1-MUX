@@ -1,0 +1,55 @@
+// ==============================================================================
+// Trace E: 30-Access Mapping-Sensitive Three-Block Cycle (0x00, 0x40, 0x80 x 10)
+// Demonstrates an architectural scenario where the Direct-Mapped cache strictly
+// outperforms the 2-Way Set-Associative cache due to set indexing differences.
+//
+// Address Breakdown:
+//   Address      2-Way [5:4] (Tag [31:6])    Direct [6:4] (Tag [31:7])
+//   0x00000000   Set 0 (Tag 0x0000000)       Set 0 (Tag 0x0000000)
+//   0x00000040   Set 0 (Tag 0x0000001)       Set 4 (Tag 0x0000000)
+//   0x00000080   Set 0 (Tag 0x0000002)       Set 0 (Tag 0x0000001)
+//
+// Architectural Explanation:
+//   In 2-Way (4 sets): bits [5:4] are 2'b00 for all three blocks. All 3 compete for
+//   the 2 available ways in Set 0. The LRU replacement policy continually evicts
+//   the block that is accessed next, resulting in 100% conflict misses (0% hit rate).
+//
+//   In Direct-Mapped (8 sets): bit 6 is part of the set index (bits [6:4]).
+//   0x00 maps to Set 0, 0x80 maps to Set 0, but 0x40 maps to Set 4!
+//   Block 0x40 is isolated in Set 4 and is NEVER evicted by Set 0 conflicts.
+//   After the initial cold miss, every access to 0x40 is a cache HIT.
+//
+// Expected Outcomes:
+//   2-Way Set-Associative: 0 hits / 30 accesses (0.0% hit rate).
+//   Direct-Mapped Baseline: 9 hits / 30 accesses (30.0% hit rate, 33.3% steady state).
+// ==============================================================================
+00000000
+00000040
+00000080
+00000000
+00000040
+00000080
+00000000
+00000040
+00000080
+00000000
+00000040
+00000080
+00000000
+00000040
+00000080
+00000000
+00000040
+00000080
+00000000
+00000040
+00000080
+00000000
+00000040
+00000080
+00000000
+00000040
+00000080
+00000000
+00000040
+00000080
