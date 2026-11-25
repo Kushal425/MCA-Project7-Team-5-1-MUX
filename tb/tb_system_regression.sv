@@ -97,8 +97,7 @@ module tb_system_regression;
     // Watchdog Timeout (100 us)
     initial begin
         #100000;
-        $display("\n[FATAL] Watchdog timeout reached in tb_system_regression! Simulation killed.");
-        $finish(1);
+        $fatal(1, "Watchdog timeout in tb_system_regression");
     end
 
     // Assertion Helper
@@ -529,8 +528,7 @@ module tb_system_regression;
             $display("TEST RESULT: ALL %0d CHECKS PASSED SUCCESSFULLY", pass_count);
             $finish(0);
         end else begin
-            $display("TEST RESULT: %0d ASSERTIONS FAILED!", fail_count);
-            $finish(1);
+            $fatal(1, "TEST RESULT: %0d SYSTEM REGRESSION CHECKS FAILED", fail_count);
         end
     end
 

@@ -1,13 +1,7 @@
 #!/usr/bin/env bash
 # ==============================================================================
 # Script: run_all.sh
-# Description: Master verification workflow for MCA Project 7.
-#              Executes the complete test hierarchy:
-#                1. Unit tests (cache_2way_store)
-#                2. Integration tests (cache_2way top-level)
-#                3. Baseline tests (cache_direct)
-#                4. Comparative benchmarks (Trace A conflict & Trace B locality)
-#                5. Targeted system regressions (reset, cold access, ready handshakes, LRU)
+# Description: Run the storage, controller, baseline, benchmark and system tests.
 #              Ensures all generated outputs are maintained in ignored locations,
 #              fails on any error, and provides actionable dependency diagnostics.
 # Author: Kushal
@@ -68,46 +62,29 @@ BUILD_DIR="$REPO_ROOT/sim_build"
 mkdir -p "$BUILD_DIR"
 
 # ------------------------------------------------------------------------------
-# 2. Tracked Source & Script Validation
+# 2. Test Suite Execution Runner
 # ------------------------------------------------------------------------------
-REQUIRED_SCRIPTS=(
-    "scripts/run_store_unit_test.sh"
-    "scripts/run_cache_2way_integration_test.sh"
-    "scripts/run_cache_direct_test.sh"
-    "scripts/run_cache_compare.sh"
-    "scripts/run_system_regression.sh"
-)
-
-for s in "${REQUIRED_SCRIPTS[@]}"; do
-    if [[ ! -f "$REPO_ROOT/$s" ]]; then
-        echo "[ERROR] Missing verification script: $s"
-        exit 1
-    fi
-    chmod +x "$REPO_ROOT/$s"
-done
-
-# ------------------------------------------------------------------------------
-# 3. Test Suite Execution Runner
-# ------------------------------------------------------------------------------
-TOTAL_SUITES=5
 PASSED_SUITES=0
 FAILED_SUITES=0
 
 declare -a SUITE_NAMES=(
     "Unit: 2-Way Storage & LRU Datapath"
+    "Stress: 2-Way Storage & LRU Reference Model"
     "Integration: Top-Level 2-Way Cache & Memory"
     "Baseline: Direct-Mapped Cache Baseline"
-    "Comparison: Trace A & Trace B Comparative Harness"
+    "Comparison: Five Shared Benchmark Traces"
     "Regression: Targeted System Regressions (Reset/LRU/B2B)"
 )
 
 declare -a SUITE_COMMANDS=(
     "./scripts/run_store_unit_test.sh"
+    "./scripts/run_store_stress_test.sh"
     "./scripts/run_cache_2way_integration_test.sh"
     "./scripts/run_cache_direct_test.sh"
     "./scripts/run_cache_compare.sh"
     "./scripts/run_system_regression.sh"
 )
+TOTAL_SUITES=${#SUITE_COMMANDS[@]}
 
 declare -a SUITE_RESULTS=()
 
@@ -121,7 +98,7 @@ for i in "${!SUITE_COMMANDS[@]}"; do
     echo " Command: $SUITE_CMD"
     echo ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"
 
-    if $SUITE_CMD; then
+    if bash "$SUITE_CMD"; then
         echo "--> [RESULT] Suite $((i+1)) PASSED: $SUITE_NAME"
         SUITE_RESULTS+=("[PASS] $SUITE_NAME")
         PASSED_SUITES=$((PASSED_SUITES + 1))
@@ -139,7 +116,7 @@ for i in "${!SUITE_COMMANDS[@]}"; do
 done
 
 # ------------------------------------------------------------------------------
-# 4. Final Comprehensive Summary
+# 3. Final Comprehensive Summary
 # ------------------------------------------------------------------------------
 echo ""
 echo "=================================================================="
@@ -156,7 +133,7 @@ echo "=================================================================="
 
 if [[ $FAILED_SUITES -eq 0 ]]; then
     echo ""
-    echo "SUCCESS: ALL FIVE TEST SUITES PASSED (EXIT 0)"
+    echo "SUCCESS: ALL $TOTAL_SUITES TEST SUITES PASSED (EXIT 0)"
     echo "=================================================================="
     exit 0
 else
