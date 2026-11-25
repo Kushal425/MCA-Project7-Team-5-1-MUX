@@ -70,6 +70,7 @@ report/*.toc
 # Explicit Whitelists:
 # Allow tracking the final report PDF and curated demo evidence / waveforms
 !report/*.pdf
+!report/phase2/*.pdf
 !docs/evidence/**
 !demo/**
 
