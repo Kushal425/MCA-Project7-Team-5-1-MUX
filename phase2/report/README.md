@@ -1,8 +1,8 @@
 # Phase II IEEE Report
 
-[LaTeX source](phase2-report.tex) · [Bibliography](references.bib) · [Earlier draft PDF](phase2-report.pdf)
+[LaTeX source](phase2-report.tex) · [Bibliography](references.bib) · [Report PDF](phase2-report.pdf)
 
-The PDF is the earlier draft. Rebuild it to include the latest simulation results and the revised report. FPGA resource and timing measurements are [pending a Vivado run](../docs/fpga-results.md).
+The PDF uses the Phase I typography and two-column layout and includes the verified Phase II simulation results. The IEEEtran source below can be compiled with LaTeX. FPGA resource and timing measurements are [pending a Vivado run](../docs/fpga-results.md).
 
 From the repository root, build with Tectonic:
 

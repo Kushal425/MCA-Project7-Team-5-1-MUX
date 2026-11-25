@@ -27,7 +27,7 @@ The prototype supports aligned 32-bit word reads, synchronous active-high reset 
 | Krishna Pramod Dubale | Storage arrays, tag lookup, LRU logic and unit tests | [LRU reference model and stress tests](phase2/docs/lru-verification.md) ([PR #1](https://github.com/Kushal425/MCA-Project7-Team-5-1-MUX/pull/1)) |
 | Apoorva Choudhary | Cache controller, memory model and integration tests | [In-flight reset, handshake and timing verification](phase2/docs/controller-verification.md) ([PR #2](https://github.com/Kushal425/MCA-Project7-Team-5-1-MUX/pull/2)) |
 | Prachee Dhar | Direct-mapped baseline and comparison tests | [File-driven benchmarks and measured response latency](phase2/docs/cache-benchmarks.md) ([PR #3](https://github.com/Kushal425/MCA-Project7-Team-5-1-MUX/pull/3)) |
-| Vani Rudra | IEEE report and demonstration materials | [Phase II IEEE draft](phase2/report/phase2-report.pdf) and [interview handout](phase2/docs/interview.md) ([PR #4](https://github.com/Kushal425/MCA-Project7-Team-5-1-MUX/pull/4)) |
+| Vani Rudra | IEEE report and demonstration materials | [Phase II IEEE report](phase2/report/phase2-report.pdf) and [interview handout](phase2/docs/interview.md) ([PR #4](https://github.com/Kushal425/MCA-Project7-Team-5-1-MUX/pull/4)) |
 | Kushal Sarkar | Design specification, system regressions and waveform evidence | [FPGA comparison flow](phase2/docs/fpga-results.md), integrated six-suite verification and corrected system-regression exit behavior |
 
 ## Run the tests
@@ -70,7 +70,7 @@ Run `./synth/run_fpga_comparison.sh` on a machine with Vivado and Artix-7 device
 ## IEEE reports
 
 - [Phase I PDF](phase1/report/phase1-report.pdf) · [LaTeX source](phase1/report/phase1-report.tex) · [Build instructions](phase1/report/README.md)
-- [Phase II draft PDF](phase2/report/phase2-report.pdf) · [Updated LaTeX source](phase2/report/phase2-report.tex) · [Build instructions](phase2/report/README.md)
+- [Phase II report PDF](phase2/report/phase2-report.pdf) · [Updated LaTeX source](phase2/report/phase2-report.tex) · [Build instructions](phase2/report/README.md)
 
 ## Prototype Demonstration Video
 

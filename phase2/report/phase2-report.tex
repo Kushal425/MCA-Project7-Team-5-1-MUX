@@ -119,14 +119,11 @@ returns one word from the incoming block.}
 
 \subsection{LRU Replacement}
 
-A refill uses the first invalid way when one is available. When both
-ways are valid, the stored LRU bit selects the victim. A hit or refill
-sets the bit to point to the other way. In the Phase~I example
-\texttt{0x00}, \texttt{0x80}, \texttt{0x00}, \texttt{0x100},
-\texttt{0x00}, the first two requests fill ways~0 and~1. The third
-request hits in way~0, so the fourth evicts \texttt{0x80} from way~1.
-The final request still hits in way~0. The demo waveform shows the
-recency update, victim selection and final hit.
+A refill takes the first invalid way, or the way named by the LRU bit
+when both are valid. A hit or refill points the bit to the other way.
+In the demo, \texttt{0x00} and \texttt{0x80} fill ways~0 and~1. A hit
+on \texttt{0x00} makes way~1 the next victim, so \texttt{0x100} replaces
+\texttt{0x80} and the final read of \texttt{0x00} hits.
 
 \section{Results and Discussion}
 

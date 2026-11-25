@@ -23,3 +23,18 @@ The 10 ns period constrains `clk` to a 100 MHz target. The flow estimates intern
 The estimate covers internal synchronous paths. This out-of-context comparison has no external I/O timing budgets, board pin assignments or attached lower memory. The simulation's request latency, the modeled AMAT and any routed clock estimate describe different quantities.
 
 References: [Vivado synth_design](https://docs.amd.com/r/en-US/ug835-vivado-tcl-commands/synth_design) · [Out-of-context design constraints](https://docs.amd.com/r/en-US/ug905-vivado-hierarchical-design/Out-of-Context-Design-Constraints)
+
+## ECP5 comparison with open-source tools
+
+The GitHub Actions workflow **FPGA comparison** runs both cache cores
+with Yosys and nextpnr on a Lattice ECP5 LFE5U-25F, CABGA381, speed grade 6.
+Use the workflow's **ecp5-fpga-comparison** artifact for the raw reports,
+or run ./synth/run_fpga_ecp5_comparison.sh with OSS CAD Suite on PATH.
+
+Both runs use the same 100 MHz target, seed and out-of-context settings.
+Read the utilized logic cells, flip-flops and memory blocks from the
+routed utilization report. Use the achieved clock frequency from the
+post-route timing report. A run may produce a valid report even if the
+estimated frequency falls below the target. Out-of-context clock timing
+covers the cache cores without external I/O timing or board-level clock
+distribution. ECP5 and Artix-7 measurements describe different devices.
