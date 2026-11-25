@@ -5,16 +5,32 @@
 //              independent instances of mem_block_model.
 //              Consumes checked-in trace files as the authoritative address source.
 //              Replays identical aligned address sequences through both cold caches,
-//              with equal data capacity, block size and memory behavior.
+//              with equal data capacity (128 B), block size (16 B), and memory behavior.
 //              Keeps expected outcomes independent of RTL output, using
-//              hand-checked vectors and an independent reference model.
-//              Verifies response data, hit/miss outcomes, and transaction counts.
+//              hand-checked vectors and an independent golden reference model.
+//              Verifies response data, hit/miss outcomes, transaction counts,
+//              and measures acceptance-to-registered-response latency per transaction.
+//
+// Latency Sampling Convention:
+//   Acceptance: Rising clock edge where (req_valid && req_ready) is sampled true.
+//   Response  : Rising clock edge where resp_valid is sampled true.
+//   Measured Latency = Response Edge - Acceptance Edge:
+//     - Hit  : 2 clock cycles (IDLE -> LOOKUP -> RESP)
+//     - Miss : 3 clock cycles (IDLE -> LOOKUP -> REFILL -> RESP with 1-cycle combinational block memory)
+//
+// Modeled AMAT vs Measured Cycles vs FPGA Frequency:
+//   - Measured Simulation Cycles: Reflect the RTL pipeline timing with a 1-cycle
+//     combinational memory model (Hit = 2 cycles, Miss = 3 cycles).
+//   - Modeled AMAT (Average Memory Access Time): Assumes a realistic lower-memory
+//     miss penalty of 20 cycles (e.g. DRAM refill): AMAT = 2.0 + (1 - HitRate) * 20.0 cycles.
+//   - FPGA Clock Frequency: Constrained by critical path synthesis (e.g. 100 MHz / 10 ns clock),
+//     converting cycles to wall-clock time (1 cycle = 10 ns).
 //
 // Traces:
 //   TRACE A: 5-Access Conflict Trace (tb/traces/conflict_trace.hex)
 //   TRACE B: 6-Access Within-Block Locality Trace (tb/traces/locality_trace.hex)
 //   TRACE C: 16-Access Extended 2-Block Conflict Trace (tb/traces/conflict_long_trace.hex)
-//   TRACE D: 32-Access Sequential Locality Trace (tb/traces/sequential_trace.hex)
+//   TRACE D: 32-Access Sequential Full-Capacity Locality Trace (tb/traces/sequential_trace.hex)
 //   TRACE E: 30-Access Mapping-Sensitive 3-Block Cycle (tb/traces/mapping_sensitive_trace.hex)
 //
 // Author: Prachee
@@ -32,11 +48,10 @@ module tb_cache_compare;
     initial clk = 1'b0;
     always #5 clk = ~clk;
 
-    // Watchdog
+    // Watchdog: Terminate immediately via $fatal on timeout
     initial begin
-        #1000000;
-        $display("[FATAL] Watchdog timeout -- simulation killed.");
-        $finish(1);
+        #2000000;
+        $fatal(1, "[FATAL] Watchdog timeout -- simulation killed.");
     end
 
     // =========================================================================
@@ -44,6 +59,17 @@ module tb_cache_compare;
     // =========================================================================
     integer pass_count;
     integer fail_count;
+
+    // Grand total accumulators across all benchmarks
+    integer tw_grand_reads;
+    integer tw_grand_hits;
+    integer tw_grand_misses;
+    integer tw_grand_lat;
+
+    integer dm_grand_reads;
+    integer dm_grand_hits;
+    integer dm_grand_misses;
+    integer dm_grand_lat;
 
     // =========================================================================
     // Helper: assertion with label
@@ -123,12 +149,15 @@ module tb_cache_compare;
     );
 
     // =========================================================================
-    // Per-trace hit/miss accumulators
+    // Per-trace hit/miss and latency accumulators
     // =========================================================================
     integer tw_hits;
     integer tw_misses;
+    integer tw_lat_total;
+
     integer dm_hits;
     integer dm_misses;
+    integer dm_lat_total;
 
     // =========================================================================
     // Independent Reference Models
@@ -231,9 +260,7 @@ module tb_cache_compare;
             count = 0;
             fd = $fopen(filename, "r");
             if (fd == 0) begin
-                $display("    [ERROR] Failed to open trace file: %s", filename);
-                fail_count = fail_count + 1;
-                $finish(1);
+                $fatal(1, "    [FATAL] Failed to open trace file: %s", filename);
             end
             c = 0;
             while (!$feof(fd)) begin
@@ -278,41 +305,44 @@ module tb_cache_compare;
     endtask
 
     // =========================================================================
-    // Helper: send one request to cache_2way, capture result in tw_got_hit/data
+    // Helper: send one request to cache_2way, measure latency in cycles
     // =========================================================================
     reg        tw_got_hit;
     reg [31:0] tw_got_data;
 
     task send_req_2way;
-        input [31:0] addr;
+        input  [31:0]  addr;
+        output integer lat_cycles;
         integer tout;
         begin
+            lat_cycles = 0;
             tout = 0;
             while (!tw_req_ready) begin
                 @(posedge clk); #1;
                 tout = tout + 1;
                 if (tout > 100) begin
-                    $display("    [TIMEOUT] 2way req_ready for 0x%08h", addr);
-                    fail_count = fail_count + 1;
-                    tw_got_hit  = 1'bx; tw_got_data = 32'hx;
-                    disable send_req_2way;
+                    $fatal(1, "    [TIMEOUT] 2way req_ready never asserted for addr=0x%08h", addr);
                 end
             end
             @(negedge clk);
             tw_req_valid = 1'b1; tw_req_addr = addr;
-            @(posedge clk); #1;
+            @(posedge clk); #1; // Request accepted at this clock edge (T0)
             @(negedge clk);
             tw_req_valid = 1'b0; tw_req_addr = 32'h0;
+
+            // Acceptance-to-registered-response latency:
+            // Request registered at posedge T0.
+            // Hit: resp_valid asserted at posedge T1, registered by master at posedge T2 (2 cycles).
+            // Miss: refill at posedge T2, resp_valid registered by master at posedge T3 (3 cycles).
+            lat_cycles = 2;
             @(posedge clk); #1;
             tout = 0;
             while (!tw_resp_valid) begin
                 @(posedge clk); #1;
+                lat_cycles = lat_cycles + 1;
                 tout = tout + 1;
                 if (tout > 100) begin
-                    $display("    [TIMEOUT] 2way resp_valid for 0x%08h", addr);
-                    fail_count = fail_count + 1;
-                    tw_got_hit  = 1'bx; tw_got_data = 32'hx;
-                    disable send_req_2way;
+                    $fatal(1, "    [TIMEOUT] 2way resp_valid never asserted for addr=0x%08h", addr);
                 end
             end
             tw_got_hit  = tw_resp_hit;
@@ -321,41 +351,44 @@ module tb_cache_compare;
     endtask
 
     // =========================================================================
-    // Helper: send one request to cache_direct, capture result in dm_got_hit/data
+    // Helper: send one request to cache_direct, measure latency in cycles
     // =========================================================================
     reg        dm_got_hit;
     reg [31:0] dm_got_data;
 
     task send_req_direct;
-        input [31:0] addr;
+        input  [31:0]  addr;
+        output integer lat_cycles;
         integer tout;
         begin
+            lat_cycles = 0;
             tout = 0;
             while (!dm_req_ready) begin
                 @(posedge clk); #1;
                 tout = tout + 1;
                 if (tout > 100) begin
-                    $display("    [TIMEOUT] direct req_ready for 0x%08h", addr);
-                    fail_count = fail_count + 1;
-                    dm_got_hit  = 1'bx; dm_got_data = 32'hx;
-                    disable send_req_direct;
+                    $fatal(1, "    [TIMEOUT] direct req_ready never asserted for addr=0x%08h", addr);
                 end
             end
             @(negedge clk);
             dm_req_valid = 1'b1; dm_req_addr = addr;
-            @(posedge clk); #1;
+            @(posedge clk); #1; // Request accepted at this clock edge (T0)
             @(negedge clk);
             dm_req_valid = 1'b0; dm_req_addr = 32'h0;
+
+            // Acceptance-to-registered-response latency:
+            // Request registered at posedge T0.
+            // Hit: resp_valid asserted at posedge T1, registered by master at posedge T2 (2 cycles).
+            // Miss: refill at posedge T2, resp_valid registered by master at posedge T3 (3 cycles).
+            lat_cycles = 2;
             @(posedge clk); #1;
             tout = 0;
             while (!dm_resp_valid) begin
                 @(posedge clk); #1;
+                lat_cycles = lat_cycles + 1;
                 tout = tout + 1;
                 if (tout > 100) begin
-                    $display("    [TIMEOUT] direct resp_valid for 0x%08h", addr);
-                    fail_count = fail_count + 1;
-                    dm_got_hit  = 1'bx; dm_got_data = 32'hx;
-                    disable send_req_direct;
+                    $fatal(1, "    [TIMEOUT] direct resp_valid never asserted for addr=0x%08h", addr);
                 end
             end
             dm_got_hit  = dm_resp_hit;
@@ -368,30 +401,85 @@ module tb_cache_compare;
     //   Issues the same address to BOTH caches sequentially.
     //   Each cache accepts the request exactly once and produces one response.
     //   Checks hit outcome and returned data word for both designs against
-    //   independent expectations. Updates per-design hit/miss counters.
+    //   independent expectations. Measures acceptance-to-response latency.
     // =========================================================================
     task run_one_access;
-        input [31:0] addr;
-        input        exp_tw_hit;
-        input        exp_dm_hit;
-        input [31:0] exp_data;
-        input string label;
+        input  [31:0]  addr;
+        input         exp_tw_hit;
+        input         exp_dm_hit;
+        input  [31:0]  exp_data;
+        input  string  label;
+        integer tw_lat, dm_lat;
         begin
             // Issue to 2-way cache
-            send_req_2way(addr);
-            if (tw_got_hit) tw_hits   = tw_hits   + 1;
-            else             tw_misses = tw_misses + 1;
+            send_req_2way(addr, tw_lat);
+            if (tw_got_hit) tw_hits = tw_hits + 1;
+            else            tw_misses = tw_misses + 1;
+            tw_lat_total = tw_lat_total + tw_lat;
 
             // Issue to direct-mapped cache
-            send_req_direct(addr);
-            if (dm_got_hit) dm_hits   = dm_hits   + 1;
-            else             dm_misses = dm_misses + 1;
+            send_req_direct(addr, dm_lat);
+            if (dm_got_hit) dm_hits = dm_hits + 1;
+            else            dm_misses = dm_misses + 1;
+            dm_lat_total = dm_lat_total + dm_lat;
 
             // Assertions
             check({label, " 2way hit"},   tw_got_hit  === exp_tw_hit);
             check({label, " 2way data"},  tw_got_data === exp_data);
             check({label, " direct hit"}, dm_got_hit  === exp_dm_hit);
             check({label, " direct data"},dm_got_data === exp_data);
+        end
+    endtask
+
+    // =========================================================================
+    // Helper: print_trace_summary
+    //   Prints comprehensive metrics for both designs on a given trace.
+    // =========================================================================
+    task print_trace_summary(
+        input string trace_name,
+        input integer total_reqs
+    );
+        real tw_hr, dm_hr;
+        real tw_avg_lat, dm_avg_lat;
+        real tw_amat_20, dm_amat_20;
+        begin
+            tw_hr = (real'(tw_hits) / real'(total_reqs)) * 100.0;
+            dm_hr = (real'(dm_hits) / real'(total_reqs)) * 100.0;
+            tw_avg_lat = real'(tw_lat_total) / real'(total_reqs);
+            dm_avg_lat = real'(dm_lat_total) / real'(total_reqs);
+
+            // Modeled AMAT under assumed miss penalty of 20 cycles (distinguished from 1-cycle RTL model):
+            // AMAT = 2.0 (hit cycles) + (1.0 - hit_fraction) * 20.0 (assumed DRAM/L2 penalty)
+            tw_amat_20 = 2.0 + (real'(tw_misses) / real'(total_reqs)) * 20.0;
+            dm_amat_20 = 2.0 + (real'(dm_misses) / real'(total_reqs)) * 20.0;
+
+            $display("\n  ------------------------------------------------------------------");
+            $display("  %s Metrics Summary (Total Reads = %0d):", trace_name, total_reqs);
+            $display("  ------------------------------------------------------------------");
+            $display("    2-Way Cache   : Hits=%0d, Misses=%0d, HitRate=%0d/%0d (%0.2f%%)",
+                     tw_hits, tw_misses, tw_hits, total_reqs, tw_hr);
+            $display("                    Measured Latency Total=%0d cycles, Avg=%0.2f cycles/req",
+                     tw_lat_total, tw_avg_lat);
+            $display("                    Modeled AMAT (penalty=20 cycles): %0.2f cycles",
+                     tw_amat_20);
+            $display("    Direct Cache  : Hits=%0d, Misses=%0d, HitRate=%0d/%0d (%0.2f%%)",
+                     dm_hits, dm_misses, dm_hits, total_reqs, dm_hr);
+            $display("                    Measured Latency Total=%0d cycles, Avg=%0.2f cycles/req",
+                     dm_lat_total, dm_avg_lat);
+            $display("                    Modeled AMAT (penalty=20 cycles): %0.2f cycles",
+                     dm_amat_20);
+            $display("  ------------------------------------------------------------------");
+
+            // Accumulate to grand totals
+            tw_grand_reads  = tw_grand_reads  + total_reqs;
+            tw_grand_hits   = tw_grand_hits   + tw_hits;
+            tw_grand_misses = tw_grand_misses + tw_misses;
+            tw_grand_lat    = tw_grand_lat    + tw_lat_total;
+
+            dm_grand_reads  = dm_grand_reads  + total_reqs;
+            dm_grand_hits   = dm_grand_hits   + dm_hits;
+            dm_grand_misses = dm_grand_misses + dm_misses;
+            dm_grand_lat    = dm_grand_lat    + dm_lat_total;
         end
     endtask
 
@@ -404,13 +492,14 @@ module tb_cache_compare;
         reg [31:0] exp_tw_data, exp_dm_data;
         string lbl;
         begin
-            tw_hits = 0; tw_misses = 0;
-            dm_hits = 0; dm_misses = 0;
+            tw_hits = 0; tw_misses = 0; tw_lat_total = 0;
+            dm_hits = 0; dm_misses = 0; dm_lat_total = 0;
 
-            $display("\n--- TRACE A: Conflict Trace ---");
+            $display("\n==================================================================");
+            $display("--- TRACE A: Conflict Trace (5 accesses, Set 0 thrashing) ---");
+            $display("==================================================================");
             load_trace("tb/traces/conflict_trace.hex", trace_len);
-            $display("    Addresses loaded: %0d", trace_len);
-            $display("    All map to Set 0 in both designs.");
+            $display("    All addresses map to Set 0 in both designs.");
             reset_both;
 
             for (i = 0; i < trace_len; i = i + 1) begin
@@ -420,13 +509,7 @@ module tb_cache_compare;
                 run_one_access(trace_mem[i], exp_tw_hit, exp_dm_hit, exp_tw_data, lbl);
             end
 
-            $display("\n  TRACE A Summary:");
-            $display("    2-Way  : %0d hits / %0d accesses = %0d%% hit rate",
-                     tw_hits, tw_hits+tw_misses,
-                     (tw_hits * 100) / (tw_hits + tw_misses));
-            $display("    Direct : %0d hits / %0d accesses = %0d%% hit rate",
-                     dm_hits, dm_hits+dm_misses,
-                     (dm_hits * 100) / (dm_hits + dm_misses));
+            print_trace_summary("TRACE A (Conflict)", trace_len);
 
             check("TRACE A: 2way hits == 2",     tw_hits   === 2);
             check("TRACE A: 2way misses == 3",   tw_misses === 3);
@@ -444,16 +527,16 @@ module tb_cache_compare;
         reg [31:0] exp_tw_data, exp_dm_data;
         string lbl;
         begin
-            tw_hits = 0; tw_misses = 0;
-            dm_hits = 0; dm_misses = 0;
+            tw_hits = 0; tw_misses = 0; tw_lat_total = 0;
+            dm_hits = 0; dm_misses = 0; dm_lat_total = 0;
 
-            $display("\n--- TRACE B: Within-Block Locality Trace ---");
+            $display("\n==================================================================");
+            $display("--- TRACE B: Within-Block Locality Trace (6 accesses) ---");
+            $display("==================================================================");
             load_trace("tb/traces/locality_trace.hex", trace_len);
-            $display("    Addresses loaded: %0d", trace_len);
             $display("    0x040: 2way set=0 (tag=1), direct set=4 (tag=0)");
             $display("    0x0C0: 2way set=0 (tag=3), direct set=4 (tag=1)");
             $display("    Both 0x40 and 0xC0 map to direct set 4; held concurrently in 2way set 0.");
-            $display("    Expected both: Miss Hit Hit Hit Miss Hit => 4/6 = 67%%");
             reset_both;
 
             for (i = 0; i < trace_len; i = i + 1) begin
@@ -463,13 +546,7 @@ module tb_cache_compare;
                 run_one_access(trace_mem[i], exp_tw_hit, exp_dm_hit, exp_tw_data, lbl);
             end
 
-            $display("\n  TRACE B Summary:");
-            $display("    2-Way  : %0d hits / %0d accesses = %0d%% hit rate",
-                     tw_hits, tw_hits+tw_misses,
-                     (tw_hits * 100) / (tw_hits + tw_misses));
-            $display("    Direct : %0d hits / %0d accesses = %0d%% hit rate",
-                     dm_hits, dm_hits+dm_misses,
-                     (dm_hits * 100) / (dm_hits + dm_misses));
+            print_trace_summary("TRACE B (Spatial Locality)", trace_len);
 
             check("TRACE B: 2way hits == 4",     tw_hits   === 4);
             check("TRACE B: 2way misses == 2",   tw_misses === 2);
@@ -487,15 +564,14 @@ module tb_cache_compare;
         reg [31:0] exp_tw_data, exp_dm_data;
         string lbl;
         begin
-            tw_hits = 0; tw_misses = 0;
-            dm_hits = 0; dm_misses = 0;
+            tw_hits = 0; tw_misses = 0; tw_lat_total = 0;
+            dm_hits = 0; dm_misses = 0; dm_lat_total = 0;
 
-            $display("\n--- TRACE C: Extended 2-Block Conflict Trace ---");
+            $display("\n==================================================================");
+            $display("--- TRACE C: Extended 2-Block Conflict Trace (16 accesses) ---");
+            $display("==================================================================");
             load_trace("tb/traces/conflict_long_trace.hex", trace_len);
-            $display("    Addresses loaded: %0d", trace_len);
             $display("    0x000 and 0x080 alternating 16 times.");
-            $display("    Expected 2way : 14 hits / 16 accesses (87.5%%)");
-            $display("    Expected direct: 0 hits / 16 accesses (0.0%%)");
             reset_both;
 
             for (i = 0; i < trace_len; i = i + 1) begin
@@ -505,13 +581,7 @@ module tb_cache_compare;
                 run_one_access(trace_mem[i], exp_tw_hit, exp_dm_hit, exp_tw_data, lbl);
             end
 
-            $display("\n  TRACE C Summary:");
-            $display("    2-Way  : %0d hits / %0d accesses = %0d%% hit rate",
-                     tw_hits, tw_hits+tw_misses,
-                     (tw_hits * 100) / (tw_hits + tw_misses));
-            $display("    Direct : %0d hits / %0d accesses = %0d%% hit rate",
-                     dm_hits, dm_hits+dm_misses,
-                     (dm_hits * 100) / (dm_hits + dm_misses));
+            print_trace_summary("TRACE C (Extended Conflict)", trace_len);
 
             check("TRACE C: 2way hits == 14",    tw_hits   === 14);
             check("TRACE C: 2way misses == 2",   tw_misses === 2);
@@ -529,14 +599,14 @@ module tb_cache_compare;
         reg [31:0] exp_tw_data, exp_dm_data;
         string lbl;
         begin
-            tw_hits = 0; tw_misses = 0;
-            dm_hits = 0; dm_misses = 0;
+            tw_hits = 0; tw_misses = 0; tw_lat_total = 0;
+            dm_hits = 0; dm_misses = 0; dm_lat_total = 0;
 
-            $display("\n--- TRACE D: Sequential Locality Trace ---");
+            $display("\n==================================================================");
+            $display("--- TRACE D: Sequential Full-Capacity Locality Trace (32 accesses) ---");
+            $display("==================================================================");
             load_trace("tb/traces/sequential_trace.hex", trace_len);
-            $display("    Addresses loaded: %0d", trace_len);
             $display("    32 accesses across 8 blocks (128 bytes full capacity).");
-            $display("    Expected both: 24 hits / 32 accesses (75.0%%)");
             reset_both;
 
             for (i = 0; i < trace_len; i = i + 1) begin
@@ -546,13 +616,7 @@ module tb_cache_compare;
                 run_one_access(trace_mem[i], exp_tw_hit, exp_dm_hit, exp_tw_data, lbl);
             end
 
-            $display("\n  TRACE D Summary:");
-            $display("    2-Way  : %0d hits / %0d accesses = %0d%% hit rate",
-                     tw_hits, tw_hits+tw_misses,
-                     (tw_hits * 100) / (tw_hits + tw_misses));
-            $display("    Direct : %0d hits / %0d accesses = %0d%% hit rate",
-                     dm_hits, dm_hits+dm_misses,
-                     (dm_hits * 100) / (dm_hits + dm_misses));
+            print_trace_summary("TRACE D (Sequential Capacity)", trace_len);
 
             check("TRACE D: 2way hits == 24",    tw_hits   === 24);
             check("TRACE D: 2way misses == 8",   tw_misses === 8);
@@ -570,15 +634,16 @@ module tb_cache_compare;
         reg [31:0] exp_tw_data, exp_dm_data;
         string lbl;
         begin
-            tw_hits = 0; tw_misses = 0;
-            dm_hits = 0; dm_misses = 0;
+            tw_hits = 0; tw_misses = 0; tw_lat_total = 0;
+            dm_hits = 0; dm_misses = 0; dm_lat_total = 0;
 
-            $display("\n--- TRACE E: Mapping-Sensitive 3-Block Cycle Trace ---");
+            $display("\n==================================================================");
+            $display("--- TRACE E: Mapping-Sensitive 3-Block Cycle Trace (30 accesses) ---");
+            $display("==================================================================");
             load_trace("tb/traces/mapping_sensitive_trace.hex", trace_len);
-            $display("    Addresses loaded: %0d", trace_len);
             $display("    0x000, 0x040, 0x080 repeated 10 times.");
-            $display("    2-Way: all 3 map to Set 0 -> 0 hits / 30 accesses (0.0%%)");
-            $display("    Direct: 0x040 maps to Set 4 -> 9 hits / 30 accesses (30.0%%)");
+            $display("    2-Way: all 3 map to Set 0 -> 100%% conflict misses.");
+            $display("    Direct: 0x040 maps to Set 4 -> isolated hits after cold miss.");
             reset_both;
 
             for (i = 0; i < trace_len; i = i + 1) begin
@@ -588,13 +653,7 @@ module tb_cache_compare;
                 run_one_access(trace_mem[i], exp_tw_hit, exp_dm_hit, exp_tw_data, lbl);
             end
 
-            $display("\n  TRACE E Summary:");
-            $display("    2-Way  : %0d hits / %0d accesses = %0d%% hit rate",
-                     tw_hits, tw_hits+tw_misses,
-                     (tw_hits * 100) / (tw_hits + tw_misses));
-            $display("    Direct : %0d hits / %0d accesses = %0d%% hit rate",
-                     dm_hits, dm_hits+dm_misses,
-                     (dm_hits * 100) / (dm_hits + dm_misses));
+            print_trace_summary("TRACE E (Mapping Sensitive)", trace_len);
 
             check("TRACE E: 2way hits == 0",     tw_hits   === 0);
             check("TRACE E: 2way misses == 30",  tw_misses === 30);
@@ -609,8 +668,15 @@ module tb_cache_compare;
     initial begin
         pass_count = 0;
         fail_count = 0;
-        tw_hits = 0; tw_misses = 0;
-        dm_hits = 0; dm_misses = 0;
+        tw_grand_reads  = 0;
+        tw_grand_hits   = 0;
+        tw_grand_misses = 0;
+        tw_grand_lat    = 0;
+        dm_grand_reads  = 0;
+        dm_grand_hits   = 0;
+        dm_grand_misses = 0;
+        dm_grand_lat    = 0;
+
         tw_rst = 1'b1; tw_req_valid = 1'b0; tw_req_addr = 32'h0;
         dm_rst = 1'b1; dm_req_valid = 1'b0; dm_req_addr = 32'h0;
 
@@ -624,6 +690,35 @@ module tb_cache_compare;
         run_trace_D;
         run_trace_E;
 
+        // =====================================================================
+        // Grand Benchmark Summary Table
+        // =====================================================================
+        $display("\n==================================================================");
+        $display("            GRAND COMPARATIVE BENCHMARK SUMMARY (ALL 5 TRACES)");
+        $display("==================================================================");
+        $display("  Metric                          2-Way Set-Associative   Direct-Mapped Baseline");
+        $display("  ------------------------------------------------------------------");
+        $display("  Total Reads Evaluated           %0d                      %0d",
+                 tw_grand_reads, dm_grand_reads);
+        $display("  Total Cache Hits                %0d                      %0d",
+                 tw_grand_hits, dm_grand_hits);
+        $display("  Total Cache Misses              %0d                      %0d",
+                 tw_grand_misses, dm_grand_misses);
+        $display("  Aggregate Hit Rate              %0d/%0d (%0.2f%%)           %0d/%0d (%0.2f%%)",
+                 tw_grand_hits, tw_grand_reads,
+                 (real'(tw_grand_hits)/real'(tw_grand_reads))*100.0,
+                 dm_grand_hits, dm_grand_reads,
+                 (real'(dm_grand_hits)/real'(dm_grand_reads))*100.0);
+        $display("  Total Measured Latency Cycles   %0d                     %0d",
+                 tw_grand_lat, dm_grand_lat);
+        $display("  Average Response Latency        %0.3f cycles/req         %0.3f cycles/req",
+                 real'(tw_grand_lat)/real'(tw_grand_reads),
+                 real'(dm_grand_lat)/real'(dm_grand_reads));
+        $display("  Modeled AMAT (penalty=20 cyc)   %0.3f cycles             %0.3f cycles",
+                 2.0 + (real'(tw_grand_misses)/real'(tw_grand_reads))*20.0,
+                 2.0 + (real'(dm_grand_misses)/real'(dm_grand_reads))*20.0);
+        $display("==================================================================");
+
         $display("\n==================================================================");
         $display("Comparative Verification Complete: %0d Passed, %0d Failed",
                  pass_count, fail_count);
@@ -632,8 +727,7 @@ module tb_cache_compare;
             $display("TEST RESULT: ALL %0d CHECKS PASSED SUCCESSFULLY", pass_count);
             $finish(0);
         end else begin
-            $display("TEST RESULT: %0d CHECKS FAILED", fail_count);
-            $finish(1);
+            $fatal(1, "TEST RESULT: %0d CHECKS FAILED", fail_count);
         end
     end
 
