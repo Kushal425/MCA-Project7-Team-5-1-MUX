@@ -67,6 +67,10 @@ In the five-request demo, the third request refreshes way 0. The fourth replaces
 
 Both cores met the 100 MHz target after routing on ECP5. The estimated maximum frequencies were 102.64 MHz for two-way and 137.55 MHz for direct-mapped. [Resource counts and raw evidence](phase2/docs/fpga-results.md)
 
+## Project presentation
+
+[Download the PowerPoint](phase2/presentation/MCA-Project7-Presentation.pptx) for the project walkthrough, benchmark results, FPGA comparison and demo. Speaker notes include the team handoffs.
+
 ## IEEE reports
 
 - [Phase I PDF](phase1/report/phase1-report.pdf) · [LaTeX source](phase1/report/phase1-report.tex) · [Build instructions](phase1/report/README.md)
