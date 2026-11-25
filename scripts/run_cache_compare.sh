@@ -34,6 +34,8 @@ REQUIRED_FILES=(
     "rtl/cache_direct.v"
     "tb/mem_block_model.v"
     "tb/tb_cache_compare.sv"
+    "tb/traces/conflict_trace.hex"
+    "tb/traces/locality_trace.hex"
 )
 for f in "${REQUIRED_FILES[@]}"; do
     if [[ ! -f "$f" ]]; then

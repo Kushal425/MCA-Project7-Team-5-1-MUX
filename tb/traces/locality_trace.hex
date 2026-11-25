@@ -5,12 +5,15 @@
 //
 // Address Breakdown:
 //   Address      2-Way [5:4] (Tag [31:6], Wd)  Direct [6:4] (Tag [31:7], Wd)
-//   0x00000040   Set 0 (Tag 0x0000001, W0)     Set 2 (Tag 0x0000000, W0) -> Miss (cold refill)
-//   0x00000044   Set 0 (Tag 0x0000001, W1)     Set 2 (Tag 0x0000000, W1) -> Spatial Hit
-//   0x00000048   Set 0 (Tag 0x0000001, W2)     Set 2 (Tag 0x0000000, W2) -> Spatial Hit
-//   0x0000004C   Set 0 (Tag 0x0000001, W3)     Set 2 (Tag 0x0000000, W3) -> Spatial Hit
-//   0x000000C0   Set 0 (Tag 0x0000003, W0)     Set 4 (Tag 0x0000001, W0) -> Miss (cold refill)
+//   0x00000040   Set 0 (Tag 0x0000001, W0)     Set 4 (Tag 0x0000000, W0) -> Miss (cold refill)
+//   0x00000044   Set 0 (Tag 0x0000001, W1)     Set 4 (Tag 0x0000000, W1) -> Spatial Hit
+//   0x00000048   Set 0 (Tag 0x0000001, W2)     Set 4 (Tag 0x0000000, W2) -> Spatial Hit
+//   0x0000004C   Set 0 (Tag 0x0000001, W3)     Set 4 (Tag 0x0000000, W3) -> Spatial Hit
+//   0x000000C0   Set 0 (Tag 0x0000003, W0)     Set 4 (Tag 0x0000001, W0) -> Miss (tag mismatch / conflict in Set 4)
 //   0x000000C4   Set 0 (Tag 0x0000003, W1)     Set 4 (Tag 0x0000001, W1) -> Spatial Hit
+//
+// Note: 0x40 and 0xC0 both map to direct set 4, with tags 0 and 1 respectively.
+// In 2-way, 0x40 and 0xC0 both map to set 0, with tags 1 and 3 respectively (held in ways 0 and 1).
 //
 // Expected Outcomes:
 //   2-Way Set-Associative: Miss, HIT, HIT, HIT, Miss, HIT (4/6 = 67% hit rate)
