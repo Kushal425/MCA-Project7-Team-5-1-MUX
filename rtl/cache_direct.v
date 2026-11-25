@@ -29,7 +29,7 @@ module cache_direct (
 
     // --------------------------------------------------------------------------
     // Controller FSM State Encoding
-    // 3-state FSM: IDLE -> LOOKUP -> REFILL (miss) or RESP (hit)
+    // 4-state FSM: IDLE -> LOOKUP -> REFILL (miss) or RESP (hit)
     // --------------------------------------------------------------------------
     localparam [1:0] STATE_IDLE   = 2'b00;
     localparam [1:0] STATE_LOOKUP = 2'b01;

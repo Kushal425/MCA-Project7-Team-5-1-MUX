@@ -62,8 +62,7 @@ module tb_cache_direct;
     // -------------------------------------------------------------------------
     initial begin
         #200000;
-        $display("[FATAL] Watchdog timeout -- simulation killed.");
-        $finish(1);
+        $fatal(1, "[FATAL] Watchdog timeout -- simulation killed.");
     end
 
     // -------------------------------------------------------------------------
@@ -106,11 +105,7 @@ module tb_cache_direct;
                 #1;
                 tout = tout + 1;
                 if (tout > 100) begin
-                    $display("    [TIMEOUT] req_ready never high for addr=0x%08h", addr);
-                    fail_count = fail_count + 1;
-                    got_hit  = 1'bx;
-                    got_data = 32'hxxxxxxxx;
-                    disable send_req;
+                    $fatal(1, "[TIMEOUT] req_ready never high for addr=0x%08h", addr);
                 end
             end
             // Drive on negedge to satisfy setup time
@@ -131,11 +126,7 @@ module tb_cache_direct;
             while (!resp_valid) begin
                 tout = tout + 1;
                 if (tout > 100) begin
-                    $display("    [TIMEOUT] resp_valid never arrived for addr=0x%08h", addr);
-                    fail_count = fail_count + 1;
-                    got_hit  = 1'bx;
-                    got_data = 32'hxxxxxxxx;
-                    disable send_req;
+                    $fatal(1, "[TIMEOUT] resp_valid never arrived for addr=0x%08h", addr);
                 end
                 @(posedge clk);
                 #1;
@@ -382,8 +373,7 @@ module tb_cache_direct;
             $display("TEST RESULT: ALL %0d CHECKS PASSED SUCCESSFULLY", pass_count);
             $finish(0);
         end else begin
-            $display("TEST RESULT: %0d CHECKS FAILED", fail_count);
-            $finish(1);
+            $fatal(1, "TEST RESULT: %0d CHECKS FAILED", fail_count);
         end
     end
 

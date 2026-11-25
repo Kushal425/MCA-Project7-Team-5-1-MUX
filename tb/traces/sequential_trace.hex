@@ -1,0 +1,47 @@
+// ==============================================================================
+// Trace D: 32-Access Sequential Full-Capacity Locality Workload
+// Evaluates spatial locality across 8 sequential 16-byte blocks (32 words = 128 bytes),
+// completely exercising the full capacity of both caches without conflict.
+//
+// Address Breakdown:
+//   Blocks 0..7 span 0x00000000 through 0x0000007C.
+//   Direct: 8 blocks occupy Sets 0 through 7.
+//   2-Way : Blocks 0..3 occupy Way 0 of Sets 0..3; Blocks 4..7 occupy Way 1 of Sets 0..3.
+//
+// Expected Outcomes:
+//   In each 4-word block: Word 0 is a cold refill miss; Words 1..3 are spatial hits.
+//   Total Hits: 8 blocks x 3 hits/block = 24 hits / 32 accesses (75.0% hit rate) for both.
+//   Total Misses: 8 misses / 32 accesses (25.0% miss rate) for both.
+// ==============================================================================
+00000000
+00000004
+00000008
+0000000C
+00000010
+00000014
+00000018
+0000001C
+00000020
+00000024
+00000028
+0000002C
+00000030
+00000034
+00000038
+0000003C
+00000040
+00000044
+00000048
+0000004C
+00000050
+00000054
+00000058
+0000005C
+00000060
+00000064
+00000068
+0000006C
+00000070
+00000074
+00000078
+0000007C
