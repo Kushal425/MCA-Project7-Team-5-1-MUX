@@ -110,7 +110,7 @@ module tb_demo_waveform;
 
     initial begin
         // Setup VCD dumping
-        $dumpfile("docs/evidence/cache_2way_demo.vcd");
+        $dumpfile("phase1/evidence/cache-2way-demo.vcd");
         $dumpvars(0, tb_demo_waveform);
 
         clk       = 0;
@@ -119,7 +119,7 @@ module tb_demo_waveform;
         req_addr  = 32'h0;
 
         $display("==================================================================");
-        $display("Generating 5-Request Demo Waveform (docs/evidence/cache_2way_demo.vcd)");
+        $display("Generating 5-Request Demo Waveform (phase1/evidence/cache-2way-demo.vcd)");
         $display("==================================================================");
 
         // Power-on reset
@@ -151,7 +151,7 @@ module tb_demo_waveform;
         repeat (5) @(posedge clk);
 
         $display("==================================================================");
-        $display("Waveform generation complete. Saved to docs/evidence/cache_2way_demo.vcd");
+        $display("Waveform generation complete. Saved to phase1/evidence/cache-2way-demo.vcd");
         $display("==================================================================");
         $finish(0);
     end

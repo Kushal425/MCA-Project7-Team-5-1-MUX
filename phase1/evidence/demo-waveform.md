@@ -2,14 +2,14 @@
 
 **Project**: Modern Computer Architecture (Project 7: 2-Way Set-Associative Cache with LRU)
 **Author**: Kushal
-**Artifact**: `docs/evidence/cache_2way_demo.vcd` (Generated via `./scripts/generate_demo_waveform.sh`)
+**Artifact**: `phase1/evidence/cache-2way-demo.vcd` (Generated via `./scripts/generate_demo_waveform.sh`)
 **Associated Testbench**: `tb/tb_demo_waveform.sv`
 
 ---
 
 ## 1. Waveform Signal Hierarchy & Real Paths
 
-To inspect the generated waveform in GTKWave (`gtkwave docs/evidence/cache_2way_demo.vcd`), add the following internal signal paths:
+To inspect the generated waveform in GTKWave (`gtkwave phase1/evidence/cache-2way-demo.vcd`), add the following internal signal paths:
 
 | Functional Group | Signal Path | Bit Width | Description |
 | :--- | :--- | :---: | :--- |
@@ -96,5 +96,5 @@ To regenerate this exact VCD trace from source:
 ./scripts/generate_demo_waveform.sh
 
 # Open in GTKWave:
-gtkwave docs/evidence/cache_2way_demo.vcd
+gtkwave phase1/evidence/cache-2way-demo.vcd
 ```

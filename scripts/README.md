@@ -36,7 +36,7 @@ This directory is designated for build, linting, and simulation automation scrip
    - Usage from repository root: `./scripts/run_system_regression.sh`
 
 6. `generate_demo_waveform.sh`:
-   - Compiles and runs `tb_demo_waveform.sv` to regenerate the reproducible VCD waveform file at `docs/evidence/cache_2way_demo.vcd`.
+   - Compiles and runs `tb_demo_waveform.sv` to regenerate the reproducible VCD waveform file at `phase1/evidence/cache-2way-demo.vcd`.
    - Usage from repository root: `./scripts/generate_demo_waveform.sh`
 
 7. `run_store_stress_test.sh`:

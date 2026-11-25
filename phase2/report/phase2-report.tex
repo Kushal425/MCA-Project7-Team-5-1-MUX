@@ -1,0 +1,252 @@
+\documentclass[conference]{IEEEtran}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{cite}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{url}
+\usepackage[hidelinks]{hyperref}
+
+\begin{document}
+
+\title{2-Way Set-Associative Cache with LRU Replacement:\\Phase~II Comparative Evaluation}
+
+\author{
+\IEEEauthorblockN{Krishna Pramod Dubale, Apoorva Choudhary, Prachee Dhar, Kushal Sarkar, Vani Rudra}
+\IEEEauthorblockA{Modern Computer Architecture (MCA) --- Project~7\\
+Rishihood University}
+}
+
+\maketitle
+
+\begin{abstract}
+We implemented a two-way set-associative cache with one-bit
+least-recently-used (LRU) replacement and compared it with a direct-mapped
+cache. Both Verilog designs store 128 bytes in 16-byte blocks and support
+aligned 32-bit reads. We replayed five traces, totaling 89 requests per
+design, and ran six simulation suites with 20,193 passing checks. The
+two-way cache hit on 14 of 16 requests in an alternating two-block trace,
+while the direct-mapped cache missed on all 16. On a three-block cycle,
+direct mapping hit on 9 of 30 requests and the two-way cache missed on all
+30. The sequential and spatial-locality traces tied. Mean response
+latencies over the five traces were 2.506 and 2.584 simulation cycles,
+respectively. This evaluation reports functional simulation.
+\end{abstract}
+
+\begin{IEEEkeywords}
+cache memory, set associativity, LRU replacement, direct-mapped cache,
+conflict miss, Verilog, hardware verification
+\end{IEEEkeywords}
+
+\section{Introduction}
+
+Two frequently accessed blocks can evict each other if a direct-mapped
+cache assigns them the same slot. A second way can keep both blocks in the
+cache. It also changes how many sets fit in the same capacity, so a
+different address sequence can favor direct mapping. Phase~I demonstrated
+the first case. Phase~II adds longer traces, a case that favors the
+direct-mapped design, and tests that check replacement and request timing
+independently.
+
+\section{Literature Review}
+
+Smith~\cite{smith1982} surveys the effects of block size and placement on
+cache behavior. Hill~\cite{hill1988} examines the trade-off between miss
+rate and access time for direct-mapped caches. We keep data capacity and
+block size equal to compare placement on the same addresses.
+Jouppi~\cite{jouppi1990} addresses conflict misses with a separate victim cache.
+Our design uses two ways in each set and tracks recency with one bit per
+set.
+
+Average memory access time (AMAT) relates hit time and miss
+penalty~\cite{patterson2017}. We use that model to show the effect of an
+assumed refill penalty. The simulation also measures response cycles
+directly with the project's combinational memory model.
+
+\section{Proposed Solution}
+
+\subsection{Design Overview}
+
+Each cache has eight lines. The two-way design groups them into four sets
+of two ways, and the direct-mapped design uses eight one-way sets.
+Table~\ref{tab:address} shows the address fields. Bits [1:0] are zero for
+aligned reads.
+
+\begin{table}[ht]
+\centering
+\caption{Fields of the 32-bit Byte Address}
+\label{tab:address}
+\begin{tabular}{@{}lcccc@{}}
+\toprule
+Design & Tag & Set & Word & Byte \\
+\midrule
+Two-way       & [31:6] & [5:4] & [3:2] & [1:0] \\
+Direct-mapped & [31:7] & [6:4] & [3:2] & [1:0] \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Architecture and Controller}
+
+The top-level controller accepts one request at a time on a rising edge
+with both \texttt{req\_valid} and \texttt{req\_ready} high. It saves the
+address in IDLE and checks the tag in LOOKUP. The two-way storage module
+compares both valid tags in parallel and selects a word from the matching
+way. A hit goes straight to RESP. A miss goes through REFILL, which writes
+the 128-bit block and takes the requested word from the incoming block.
+Figure~\ref{fig:datapath} shows the controller and datapath.
+Both paths give a one-cycle \texttt{resp\_valid} pulse in RESP before
+returning to IDLE. Synchronous reset invalidates all lines.
+
+\begin{figure}[ht]
+\centering
+\footnotesize
+\begin{tabular}{c}
+\fbox{CPU read request}\\
+$\downarrow$\\
+\fbox{Controller: IDLE, LOOKUP, REFILL, RESP}\\
+$\updownarrow$ \hspace{3.2em} $\updownarrow$\\[-1pt]
+\fbox{Way 0 / Way 1, tag checks, LRU}\quad\fbox{Refill port}\\
+$\downarrow$\\
+\fbox{Word selection and response}
+\end{tabular}
+\caption{Two-way cache datapath. A miss refills the selected way and
+returns one word from the incoming block.}
+\label{fig:datapath}
+\end{figure}
+
+\subsection{LRU Replacement}
+
+A refill uses the first invalid way when one is available. When both
+ways are valid, the stored LRU bit selects the victim. A hit or refill
+sets the bit to point to the other way. In the Phase~I example
+\texttt{0x00}, \texttt{0x80}, \texttt{0x00}, \texttt{0x100},
+\texttt{0x00}, the first two requests fill ways~0 and~1. The third
+request hits in way~0, so the fourth evicts \texttt{0x80} from way~1.
+The final request still hits in way~0. The demo waveform shows the
+recency update, victim selection and final hit.
+
+\section{Results and Discussion}
+
+\subsection{Verification}
+
+The simulation uses Icarus Verilog 13.0~\cite{icarus-verilog}. The memory
+model returns four words per block, each equal to its own byte address.
+The tests check returned data as well as hit and miss outcomes. The
+reference model maintains its own recency order for each set. The
+controller tests add reset during an in-flight request, a request held
+while the cache is busy, and checks that each completed transaction has
+one response.
+
+\begin{table}[ht]
+\centering
+\caption{Simulation Checks by Test Suite}
+\label{tab:verification}
+\begin{tabular}{@{}lr@{}}
+\toprule
+Suite & Passed \\
+\midrule
+Storage unit & 51 \\
+LRU reference-model stress & 19,116 \\
+Two-way controller integration & 276 \\
+Direct-mapped baseline & 30 \\
+Cache comparison & 376 \\
+System regression & 344 \\
+\midrule
+Total & 20,193 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Trace Comparison}
+
+Both caches start empty for each trace and receive identical addresses
+in the same order. Table~\ref{tab:traces} gives the hit counts and rates. In the
+extended conflict trace, two blocks repeatedly map to the same set. The
+two-way cache holds both after the first two misses. The direct-mapped
+cache replaces its only resident line on every access. Both caches tie
+on the two traces that reuse words from the same 16-byte blocks.
+
+\begin{table}[ht]
+\centering
+\caption{Cache Hits per Read and Hit Rate by Trace}
+\label{tab:traces}
+\small
+\begin{tabular}{@{}lrr@{}}
+\toprule
+Trace & Two-way & Direct \\
+\midrule
+Short conflict & 2/5 (40.0\%) & 0/5 (0.0\%) \\
+Spatial locality & 4/6 (66.7\%) & 4/6 (66.7\%) \\
+Extended conflict & 14/16 (87.5\%) & 0/16 (0.0\%) \\
+Sequential & 24/32 (75.0\%) & 24/32 (75.0\%) \\
+Three-block cycle & 0/30 (0.0\%) & 9/30 (30.0\%) \\
+\midrule
+Total & 44/89 (49.44\%) & 37/89 (41.57\%) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+On the three-block cycle \texttt{0x00}, \texttt{0x40}, \texttt{0x80},
+all three blocks map to set~0 in the two-way cache, so each access
+evicts the next block needed. In the direct-mapped cache, address bit~6
+is part of the set index. It places \texttt{0x40} in set~4, where nine
+of its ten accesses hit. The other two addresses keep replacing one
+another in set~0.
+
+\subsection{Latency and FPGA Evaluation}
+
+The receiver samples a hit two rising edges after request acceptance and
+a miss three edges after acceptance. The internal response registers
+are updated one edge earlier. Over the 89 requests the two-way cache
+took 223 cycles in total, or 2.506 cycles per request. The direct-mapped
+cache took 230 cycles, or 2.584 per request.
+
+Using $\mathrm{AMAT}=t_{\mathrm{hit}}+(1-h)M$, where $h$ is hit rate
+and $M$ is the additional miss penalty, an assumed $M=20$ cycles gives
+4.5 cycles for the two-way cache and 22.0 for direct mapping on the
+extended conflict trace. The model uses $t_{\mathrm{hit}}=2$ cycles.
+The assumed penalty represents a separate memory scenario.
+
+The repository includes a Vivado flow targeting
+\texttt{xc7a35tcpg236-1} with a common 10~ns clock constraint for both
+designs. The flow collects utilization and post-route internal timing.
+A Vivado run is still needed for FPGA resource counts and a maximum
+clock frequency estimate. The simulation cycle counts describe the
+read interface with its combinational memory model.
+
+\section{Individual Contributions}
+
+\begin{enumerate}
+\item \textbf{Krishna Pramod Dubale} implemented the two-way storage,
+tag comparison, and LRU logic, then added the Phase~II reference-model
+stress tests.
+\item \textbf{Apoorva Choudhary} implemented the cache controller and
+memory model, then extended the integration tests for reset, request
+handling, and response timing.
+\item \textbf{Prachee Dhar} implemented the direct-mapped baseline,
+added file-driven benchmarks and recorded hit counts and latency for
+both designs.
+\item \textbf{Kushal Sarkar} wrote the interface specification, system
+regressions, and waveform demo, integrated the six-suite test runner,
+fixed regression exit handling, and added the FPGA comparison flow.
+\item \textbf{Vani Rudra} prepared the IEEE reports, architecture and
+controller figures, and the interview handout.
+\end{enumerate}
+
+\section{Conclusion}
+
+The two-way cache reduced misses when two active blocks shared a set.
+The three-block cycle showed how the direct-mapped cache's extra index
+bit can keep one of those blocks resident. Both designs store the same
+amount of data, so the difference in hit count comes from how addresses
+are placed and replaced. The comparison establishes the behavior for
+these read traces. The hardware cost and clock rate require the routed
+FPGA measurements.
+
+\bibliographystyle{IEEEtran}
+\bibliography{references}
+
+\end{document}

@@ -7,22 +7,23 @@
 - [`rtl/cache_2way.v`](../../rtl/cache_2way.v) (2-Way Set-Associative Cache, 128 bytes, 4 sets x 2 ways x 16 B)
 - [`rtl/cache_2way_store.v`](../../rtl/cache_2way_store.v) (Internal storage, tag match & LRU)  
 **Verification Harness:** [`tb/tb_cache_compare.sv`](../../tb/tb_cache_compare.sv) & [`tb/tb_cache_direct.sv`](../../tb/tb_cache_direct.sv)  
-**Authoritative Trace Directory:** [`tb/traces/`](../../tb/traces/)  
+**Authoritative Trace Directory:** [`tb/traces/`](../../tb/traces)
+
 **Execution Script:** [`scripts/run_cache_compare.sh`](../../scripts/run_cache_compare.sh)
 
 ---
 
 ## 1. Executive Summary
 
-This document presents the rigorous Phase II comparative benchmark evaluation between the **Direct-Mapped Cache baseline** (`cache_direct`) and the **2-Way Set-Associative Cache with LRU** (`cache_2way`). 
+We replayed five address traces on the direct-mapped baseline (`cache_direct`) and the two-way cache with LRU (`cache_2way`).
 
 Both caches implement identical external interfaces, identical total storage capacity (128 bytes), identical block geometry (16 bytes per block, 4 words per block), and identical synchronous handshaking protocols (`req_valid`/`req_ready` master interface, `resp_valid`/`resp_hit`/`resp_data` response interface).
 
 ### Key Architectural Findings:
-1. **Associativity Eliminates 2-Block Thrashing:** In conflict workloads where two or more blocks map to the same set (Traces A and C), 2-way set-associativity with LRU replacement achieves up to **87.5% hit rate**, whereas the direct-mapped cache suffers catastrophic 100% conflict eviction (**0.0% hit rate**).
+1. **Associativity Eliminates 2-Block Thrashing:** In conflict workloads where two or more blocks map to the same set (Traces A and C), 2-way set-associativity with LRU replacement achieves up to **87.5% hit rate**, whereas the direct-mapped cache misses on every request (**0.0% hit rate**).
 2. **Spatial Locality Parity:** Under purely sequential and within-block access patterns (Traces B and D), both designs perform identically (**66.7%** and **75.0% hit rates**), showing that set indexing differences do not degrade contiguous spatial locality.
 3. **Set Indexing Anomaly (Direct-Mapped Outperforms 2-Way):** Under a 3-block repeating cycle (`0x00, 0x40, 0x80`), direct-mapped strictly **outperforms** the 2-way cache (**30.0% vs. 0.0% hit rate**). Because the direct-mapped cache has 8 sets vs. 4 sets in 2-way, address bit 6 acts as an index bit in direct-mapped, placing `0x40` in Set 4 while `0x00` and `0x80` conflict in Set 0. In 2-way, all three blocks map to Set 0, exceeding the 2-way capacity of the set and triggering continuous LRU thrashing.
-4. **Latency Characterization:** Across all 89 evaluated trace requests, measured acceptance-to-registered-response latency averages **2.506 cycles/req** for 2-way vs. **2.584 cycles/req** for direct-mapped (12.112 vs. 13.685 cycles under modeled 20-cycle DRAM refill penalty).
+4. **Latency Characterization:** Across all 89 evaluated trace requests, measured acceptance-to-receiver-sampling latency averages **2.506 cycles/req** for 2-way vs. **2.584 cycles/req** for direct-mapped (12.112 vs. 13.685 cycles under modeled 20-cycle DRAM refill penalty).
 
 ---
 
@@ -70,9 +71,9 @@ Bits [3:2]  : Word select within 16-byte block (4 words: W0, W1, W2, W3)
 
 ## 3. Timing, Latency Conventions, and AMAT Formulation
 
-### 3.1 Measured Simulation Latency (Per-Request Acceptance-to-Registered-Response)
+### 3.1 Measured Simulation Latency (Per-Request Acceptance to Receiver Sampling)
 
-Latency is measured in discrete clock cycles from request acceptance to registered response availability:
+Latency is measured in discrete clock cycles from request acceptance to the rising edge where the receiver samples the response:
 
 ```
 Clock Edge:     T0                T1                T2                T3
@@ -86,13 +87,13 @@ HIT PATH:
 state:          ...IDLE |  LOOKUP |  RESP           |  IDLE           |
 resp_valid:     ------------------/-----------------\_________________
                                   [T1: Driver Pulse] [T2: Receiver Registers]
-                                  <---- 2 Cycles Acceptance-to-Registered ---->
+                                  <---- 2 Cycles Acceptance to Receiver Sampling ---->
 
 MISS PATH:
 state:          ...IDLE |  LOOKUP |  REFILL         |  RESP           |  IDLE
 resp_valid:     ------------------------------------/-----------------\________
                                                     [T2: Driver Pulse] [T3: Receiver Registers]
-                                  <------- 3 Cycles Acceptance-to-Registered ------->
+                                  <------- 3 Cycles Acceptance to Receiver Sampling ------->
 ```
 
 1. **Acceptance Clock Edge ($T_0$):** Rising clock edge where `req_valid && req_ready` evaluates to 1. The controller latches `saved_addr <= req_addr` and enters `STATE_LOOKUP`.
@@ -102,19 +103,19 @@ resp_valid:     ------------------------------------/-----------------\________
 3. **Receiver Sampling Edge ($T_2$ or $T_3$):** 
    - A synchronous receiver (CPU core or bus master) clocked on the rising clock edge samples `resp_valid == 1` and latches `resp_data` and `resp_hit`.
    - **Hit Latency:** $T_2 - T_0 = \mathbf{2 \text{ clock cycles}}$.
-   - **Miss Latency:** $T_3 - T_0 = \mathbf{3 \text{ clock cycles}}$ (under 1-cycle combinational lower memory model).
+   - **Miss Latency:** $T_3 - T_0 = \mathbf{3 \text{ clock cycles}}$ (with the combinational lower-memory model).
 
 ### 3.2 Distinction: Measured Simulation Cycles vs. Modeled AMAT vs. FPGA Frequency
 
-To ensure academic and professional rigor, three distinct timing domains are explicitly decoupled:
+We report three timing quantities.
 
 1. **Measured RTL Simulation Cycles:**
    $$\text{Measured Latency} = (\text{Hits} \times 2 + \text{Misses} \times 3) / \text{Total Accesses}$$
-   This metric measures the actual hardware pipeline depth when connected to the deterministic combinational memory model (`mem_block_model`).
+   This gives the mean transaction latency with the combinational memory model (`mem_block_model`).
 2. **Modeled AMAT (Average Memory Access Time):**
    $$\text{AMAT} = t_{\text{hit}} + (1 - \text{Hit Rate}) \times M_{\text{penalty}}$$
    Where $t_{\text{hit}} = 2.0 \text{ cycles}$ and assumed DRAM/L2 refill penalty $M_{\text{penalty}} = 20.0 \text{ cycles}$.
-   This models system-level CPU stall cycles under realistic off-chip memory latency.
+   The 20-cycle value models an assumed additional refill cost.
 3. **FPGA Clock Frequency:**
    The [FPGA comparison flow](fpga-results.md) uses a 100 MHz target constraint. Wall-clock latency at that clock would be the simulated cycle count multiplied by 10 ns, conditional on timing closure and the stated memory model. Routed results are pending.
 

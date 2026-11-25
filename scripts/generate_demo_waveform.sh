@@ -2,7 +2,7 @@
 # ==============================================================================
 # Script: generate_demo_waveform.sh
 # Description: Compiles and executes the 5-request demo simulation to regenerate
-#              the reproducible VCD waveform at docs/evidence/cache_2way_demo.vcd.
+#              the reproducible VCD waveform at phase1/evidence/cache-2way-demo.vcd.
 # Author: Kushal
 # Usage: ./scripts/generate_demo_waveform.sh
 # ==============================================================================
@@ -46,7 +46,7 @@ done
 
 BUILD_DIR="sim_build"
 mkdir -p "$BUILD_DIR"
-mkdir -p "docs/evidence"
+mkdir -p "phase1/evidence"
 
 VVP_OUT="$BUILD_DIR/sim_demo_waveform.vvp"
 trap 'rm -f "$VVP_OUT"' EXIT
@@ -69,10 +69,10 @@ vvp "$VVP_OUT"
 
 echo ""
 echo "=================================================================="
-if [[ -f "docs/evidence/cache_2way_demo.vcd" ]]; then
-    WAVE_SIZE=$(ls -lh docs/evidence/cache_2way_demo.vcd | awk '{print $5}')
-    echo "SUCCESS: Waveform generated at docs/evidence/cache_2way_demo.vcd ($WAVE_SIZE)"
-    echo "To inspect in GTKWave: gtkwave docs/evidence/cache_2way_demo.vcd"
+if [[ -f "phase1/evidence/cache-2way-demo.vcd" ]]; then
+    WAVE_SIZE=$(ls -lh phase1/evidence/cache-2way-demo.vcd | awk '{print $5}')
+    echo "SUCCESS: Waveform generated at phase1/evidence/cache-2way-demo.vcd ($WAVE_SIZE)"
+    echo "To inspect in GTKWave: gtkwave phase1/evidence/cache-2way-demo.vcd"
 else
     echo "ERROR: VCD waveform was not created!"
     exit 1

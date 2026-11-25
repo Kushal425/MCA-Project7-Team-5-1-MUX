@@ -1,7 +1,5 @@
 # Phase II Interview Handout
-# MCA Project 7 — 1-MUX Cache Design
-
-**Team 5 — Rishihood University MCA Programme, 2024–25**
+MCA Project 7 · Two-Way Set-Associative Cache with LRU · Team 5, Rishihood University
 **Prepared by:** Vani Rudra (`phase2/vani-final-report`)
 
 ---
@@ -13,9 +11,10 @@ RTL design, verification methodology, benchmark evaluation, and FPGA
 synthesis (pending). Each team member defends their own component and must
 be able to answer cross-cutting questions about the architecture.
 
-**Duration:** ~20 minutes total (~4 minutes per speaker).  
+**Rehearsal target:** 20 minutes total, about 4 minutes per speaker. Use the instructor’s timing for the actual interview.
+
 **Live Demo:** Run `./scripts/run_all.sh` from the repo root; open
-`docs/evidence/cache_2way_demo.vcd` in VS Code with the WaveTrace extension
+`phase1/evidence/cache-2way-demo.vcd` in VS Code with the WaveTrace extension
 (or the Zoro waveform viewer shown in the project screenshots).
 
 ---
@@ -24,11 +23,11 @@ be able to answer cross-cutting questions about the architecture.
 
 | # | Speaker | Section | Key File(s) |
 |---|---------|---------|-------------|
-| 1 | **Kushal Sarkar** | System Integration & FPGA | `tb/tb_system_regression.sv`, `docs/evidence/` |
+| 1 | **Kushal Sarkar** | System Integration & FPGA | `tb/tb_system_regression.sv`, `phase1/evidence/` |
 | 2 | **Krishna Pramod Dubale** | LRU Storage Design | `rtl/cache_2way_store.v`, `tb/tb_cache_2way_store.sv` |
 | 3 | **Apoorva Choudhary** | FSM Controller Verification | `tb/tb_cache_2way.sv` |
-| 4 | **Prachee Dhar** | Comparative Benchmarks | `docs/phase2/cache-benchmarks.md`, `tb/traces/` |
-| 5 | **Vani Rudra** | Report, Figures & AMAT Analysis | `report/phase2/main.tex`, `docs/phase2/interview.md` |
+| 4 | **Prachee Dhar** | Comparative Benchmarks | `phase2/docs/cache-benchmarks.md`, `tb/traces/` |
+| 5 | **Vani Rudra** | Report, Figures & AMAT Analysis | `phase2/report/phase2-report.tex`, `phase2/docs/interview.md` |
 
 ---
 
@@ -41,13 +40,13 @@ be able to answer cross-cutting questions about the architecture.
    ```
    Expected output: all six suites pass (20,193 checks).
 
-2. **Show the waveform** — open `docs/evidence/cache_2way_demo.vcd` in VS Code (WaveTrace extension).
+2. **Show the waveform** — open `phase1/evidence/cache-2way-demo.vcd` in VS Code (WaveTrace extension).
    - Point to the accepted third request at 115 ns and its registered hit response visible at the 126 ns sample.
    - Show the fourth request replacing Way 1 at 165 ns and the final hit visible at the 196 ns sample.
    - Highlight the `state[1:0]` transitions: `00→01→10→11→00` (IDLE→LOOKUP→REFILL→RESP→IDLE).
 
-3. **Show the benchmark comparison** — open `docs/phase2/cache-benchmarks.md`.
-   - Highlight Table 2 (Trace A: 40% vs 0%) and Table 4 (Trace C: 87.5% vs 0%).
+3. **Show the benchmark comparison** — open `phase2/docs/cache-benchmarks.md`.
+   - Highlight Trace A (40% vs 0%) and Trace C (87.5% vs 0%) in the results table.
    - Draw attention to the set-index anomaly (Trace E: 0% vs 30%).
 
 ---
@@ -55,12 +54,12 @@ be able to answer cross-cutting questions about the architecture.
 ## Speaker 1 — Kushal Sarkar: System Integration & FPGA
 
 **What you own:** `tb/tb_system_regression.sv` (344 assertions), waveform
-evidence (`docs/evidence/cache_2way_demo.vcd`), and the [FPGA comparison flow](fpga-results.md).
+evidence (`phase1/evidence/cache-2way-demo.vcd`), and the [FPGA comparison flow](fpga-results.md).
 
 **Likely questions:**
 
 1. *"Explain your verification methodology. How did you ensure end-to-end correctness?"*
-   > Run all six testbench suites via `run_all.sh`. Each suite uses `$display` + `if (!expr) $fatal` to report assertion failures with file/line references. The 344 regression assertions cover all address boundaries, back-to-back requests, and reset behaviour.
+   > Run all six testbench suites via `run_all.sh`. The system regression checks reset, back-to-back requests and whether traffic in one set changes replacement in another. A failed check causes the runner to exit with an error.
 
 2. *"What does the waveform show at t=115 ns and t=196 ns?"*
    > The third request for `0x00` is accepted at 115 ns and its hit is visible at the 126 ns sample. The fourth request for `0x100` evicts Way 1 at 165 ns. The last request hits on `0x00`, as observed at 196 ns.
@@ -85,7 +84,7 @@ evidence (`docs/evidence/cache_2way_demo.vcd`), and the [FPGA comparison flow](f
    > On a **miss/refill**: the selected way is the first invalid slot, or the way indicated by `lru_bit` if both are valid. The bit then points to the other way.
 
 2. *"What happens if both ways are invalid (cold start)?"*
-   > The LRU bit initialises to 0, so Way 0 fills first. After that, Way 1 fills. After both are valid, standard LRU applies.
+   > The victim logic explicitly prefers invalid Way 0, then invalid Way 1. It uses the LRU bit once both ways are valid.
 
 3. *"Why use 1 bit per set rather than a full recency counter?"*
    > With exactly 2 ways, 1 bit encodes perfect LRU: it tracks which way was used more recently. A counter would require log2(2)=1 bit anyway, so there is no information gain from a larger counter.
@@ -106,20 +105,20 @@ transitions, hit/miss flags, `resp_data` correctness, `req_ready` behaviour).
    > The request interface only guarantees `req_addr` is stable while `req_valid && req_ready` is true (the acceptance cycle). After that, the master may change `req_addr`. `saved_addr` holds the latched address so LOOKUP and REFILL can operate on the correct address even if the master already changed its outputs.
 
 2. *"Walk me through the FSM for a cache miss."*
-   > `STATE_IDLE`: accept request, latch `saved_addr`. → `STATE_LOOKUP`: compare tag; miss detected. → `STATE_REFILL`: write memory block to the LRU way, update tag/valid/LRU. → `STATE_RESP`: assert `resp_valid=1`, `resp_hit=0`, `resp_data` from refilled block. → `STATE_IDLE`.
+   > `STATE_IDLE`: accept request, latch `saved_addr`. → `STATE_LOOKUP`: compare tag; miss detected. → `STATE_REFILL`: write the block into the selected way and update tag, valid and LRU state. → `STATE_RESP`: assert `resp_valid=1`, `resp_hit=0`, `resp_data` from refilled block. → `STATE_IDLE`.
 
 3. *"How did you verify that resp\_data is correct on a spatial hit (W1, W2, W3 of a refilled block)?"*
    > After a cold miss on W0 of a block, the testbench sends W1, W2, W3 of the same block. Assertions check `resp_hit=1` and `resp_data == mem_block_data[word_select]` for each word offset.
 
-4. *"What is the minimum handshake overhead per request?"*
-   > Hit path: 1 cycle acceptance + 1 cycle LOOKUP + 1 cycle RESP = **2 cycles** per request (no REFILL). Miss path: 2 cycles acceptance+LOOKUP + 1 cycle REFILL + 1 cycle RESP = **3 cycles** minimum.
+4. *"How many cycles elapse before the receiver samples a response?"*
+   > Count from the acceptance edge. On a hit the cache raises the response after one edge and the receiver samples it at the second. A miss adds one REFILL cycle, so the receiver samples it at the third edge.
 
 ---
 
 ## Speaker 4 — Prachee Dhar: Comparative Benchmarks
 
 **What you own:** `tb/tb_cache_compare.sv`, `tb/traces/` (5 trace files),
-`scripts/run_cache_compare.sh`, `docs/phase2/cache-benchmarks.md`.
+`scripts/run_cache_compare.sh`, `phase2/docs/cache-benchmarks.md`.
 
 **Likely questions:**
 
@@ -127,10 +126,10 @@ transitions, hit/miss flags, `resp_data` correctness, `req_ready` behaviour).
    > Addresses `0x00`, `0x40`, `0x80` all map to Set 0 in the 2-way cache (bit 6 is a tag bit, not a set-index bit). Three blocks in a 2-way set causes continuous LRU eviction of all three. In direct-mapped, bit 6 IS a set-index bit: `0x40` goes to Set 4 while `0x00` and `0x80` share Set 0. Only the Set-0 pair thrashes; `0x40` hits stably, giving 30% hit rate.
 
 2. *"Why are your traces loaded from disk rather than hardcoded in the testbench?"*
-   > On-disk traces (`.hex` files via `$fopen`/`$fgets`) ensure the trace is \emph{independent} of the RTL. Any change to the cache implementation cannot inadvertently alter the workload, making the benchmark reproducible and tamper-evident.
+   > On-disk traces (`.hex` files via `$fopen`/`$fgets`) let both designs replay the same checked-in addresses. We can add a workload by changing the trace file.
 
 3. *"What does Trace C prove beyond Trace A?"*
-   > Trace A (5 accesses) shows the conflict-miss effect but has only 2 hits in 2-way. Trace C (16 alternating accesses) shows that the advantage is \emph{sustained}: after the first 2 cold misses, all 14 subsequent accesses hit in 2-way (87.5%) while direct-mapped continues to thrash (0%).
+   > Trace A (5 accesses) shows the conflict-miss effect but has only 2 hits in 2-way. Trace C (16 alternating accesses) shows the same pattern over more requests: after the first 2 cold misses, all 14 subsequent accesses hit in 2-way (87.5%) while direct-mapped continues to thrash (0%).
 
 4. *"Why do Traces B and D give identical hit rates for both designs?"*
    > Spatial locality within a 16-byte block is determined by block size, not associativity. Both caches have identical 16-byte blocks. Consecutive word accesses within a fetched block hit in both caches identically regardless of tag structure or set index.
@@ -139,8 +138,8 @@ transitions, hit/miss flags, `resp_data` correctness, `req_ready` behaviour).
 
 ## Speaker 5 — Vani Rudra: Report, Figures & AMAT Analysis
 
-**What you own:** `report/phase2/main.tex` (this IEEE report),
-`docs/phase2/interview.md` (this file).
+**What you own:** `phase2/report/phase2-report.tex` (this IEEE report),
+`phase2/docs/interview.md` (this file).
 
 **Likely questions:**
 
@@ -148,16 +147,16 @@ transitions, hit/miss flags, `resp_data` correctness, `req_ready` behaviour).
    > AMAT = t\_hit + (1 − h) × M\_p.  
    > 2-way: 2.0 + (1 − 0.40) × 20 = **14.0 cycles**.  
    > Direct: 2.0 + (1 − 0.00) × 20 = **22.0 cycles**.  
-   > The 2-way cache saves 8 cycles per access under a 20-cycle DRAM penalty — a 36% reduction in memory stall time.
+   > Under that assumed penalty, the modeled average drops from 22 to 14 cycles, about 36%.
 
 2. *"Why is the combinational memory model a limitation?"*
-   > The testbench `u_mem` module returns the full 128-byte memory block in the same simulation clock cycle as the REFILL request. Real DRAM has 50–100+ ns latency. This means the measured 3-cycle miss latency understates the real-world penalty. AMAT modelling adds M\_p=20 cycles to compensate, but the exact real-world value depends on the memory subsystem.
+   > The testbench memory returns a 128-bit (16-byte) block combinationally. The three-cycle miss therefore measures the controller with that model. The 20-cycle miss penalty is an assumption for AMAT analysis.
 
 3. *"Explain the address decomposition. Why does the 2-way cache have a larger tag?"*
    > Both caches address 128 bytes in 8 blocks of 16 bytes. 2-way uses 4 sets (2 bits: addr[5:4]), leaving 26 bits for the tag (addr[31:6]). Direct-mapped uses 8 sets (3 bits: addr[6:4]), leaving 25 bits for the tag (addr[31:7]). The extra set-index bit in direct-mapped is what causes addr[6] to separate `0x40` from `0x00` in Set geometry.
 
 4. *"What do the 20,193 checks cover?"*
-   > The six suites check directed storage behavior, the independent LRU model, controller transactions, direct-mapped behavior, competition across five benchmark traces and system regressions. The total is a count of executed simulation checks.
+   > The six suites check directed storage behavior, the independent LRU model, controller transactions, direct-mapped behavior, the same five traces on both designs and system regressions. The total is a count of executed simulation checks.
 
 ---
 
@@ -189,12 +188,12 @@ transitions, hit/miss flags, `resp_data` correctness, `req_ready` behaviour).
 ./scripts/run_cache_compare.sh
 
 # View waveform in VS Code (requires WaveTrace extension)
-# File → Open → docs/evidence/cache_2way_demo.vcd
+# File → Open → phase1/evidence/cache-2way-demo.vcd
 
 # Compile the Phase II report
-tectonic report/phase2/main.tex -o report/phase2/
+(cd phase2/report && tectonic phase2-report.tex)
 ```
 
 ---
 
-*Document version: Phase II draft — FPGA synthesis results PENDING.*
+*FPGA resource and timing measurements are pending.*

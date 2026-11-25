@@ -49,28 +49,8 @@ __pycache__/
 *.synctex(busy)
 *.synctex.gz
 *.toc
-report/*.aux
-report/*.bbl
-report/*.bcf
-report/*.blg
-report/*.fdb_latexmk
-report/*.fls
-report/*.idx
-report/*.ilg
-report/*.ind
-report/*.lof
-report/*.lot
-report/*.nav
-report/*.out
-report/*.run.xml
-report/*.snm
-report/*.synctex.gz
-report/*.toc
 
-# Explicit Whitelists:
-# Allow tracking the final report PDF and curated demo evidence / waveforms
-!report/*.pdf
-!report/phase2/*.pdf
-!docs/evidence/**
-!demo/**
 
+# Archived Phase I simulation evidence
+!/phase1/evidence/cache-2way-demo.vcd
+!/phase1/evidence/cache-comparison.log

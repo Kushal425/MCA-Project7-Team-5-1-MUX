@@ -1,6 +1,6 @@
 # Worked LRU Replacement Explanation & Unit Test Analysis
 
-This document provides a worked walkthrough of the Least-Recently-Used (LRU) state tracking and replacement mechanics implemented in `rtl/cache_2way_store.v`, directly tied to the automated unit verification scenarios in `tb/tb_cache_2way_store.sv` and the benchmark trace in `docs/demo-trace.md`.
+This document provides a worked walkthrough of the Least-Recently-Used (LRU) state tracking and replacement mechanics implemented in `rtl/cache_2way_store.v`, directly tied to the automated unit verification scenarios in `tb/tb_cache_2way_store.sv` and the benchmark trace in `phase1/docs/demo-trace.md`.
 
 ---
 
@@ -61,7 +61,7 @@ $$\text{victim\_way} = \begin{cases}
 ---
 
 ### Step 4: The Critical Recency Refresh via `touch_en` (Test 5)
-This step directly mirrors the pivotal Step 3 in `docs/demo-trace.md` where re-referencing Block A protects it from being evicted.
+This step directly mirrors the pivotal Step 3 in `phase1/docs/demo-trace.md` where re-referencing Block A protects it from being evicted.
 - **Pre-Touch State**: `lru_bit[0] == 0` (Way 0 is slated to be evicted on the next miss).
 - **Action**: Address Block A (`tag = 26'h0A`, Set 0).
   - Combinational lookup detects `hit = 1, hit_way = 0` (`way0_match = 1`).

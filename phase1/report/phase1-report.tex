@@ -261,12 +261,12 @@ Trace~A demonstrates the conflict-miss advantage of set associativity: the 2-way
   \item \textbf{Kushal Sarkar} (Specification and Verification):
     Initialized the repository and authored the interface specification
     (\path{docs/interface.md}), benchmark trace analysis
-    (\path{docs/demo-trace.md}), and project architecture contracts.
+    (\path{phase1/docs/demo-trace.md}), and project architecture contracts.
     Implemented system regression
     testbenches (\path{tb/tb_system_regression.sv}, 344~assertions),
     the master verification workflow (\path{scripts/run_all.sh}),
     and the reproducible demo waveform evidence
-    (\path{docs/evidence/cache_2way_demo.vcd}).
+    (\path{phase1/evidence/cache-2way-demo.vcd}).
     Commits: \texttt{3043e05}, \texttt{92dfa5b}, \texttt{3eb612c},
     \texttt{d6cdad6}, \texttt{005cb92}, \texttt{fdb01a1}.
 
@@ -295,14 +295,14 @@ Trace~A demonstrates the conflict-miss advantage of set associativity: the 2-way
     (\path{tb/tb_cache_direct.sv}), and the 52-assertion comparative
     dual-cache trace harness (\path{tb/tb_cache_compare.sv}).
     Authored verified comparison evidence
-    (\path{docs/evidence/cache_comparison_evidence.md}).
+    (\path{phase1/evidence/cache-comparison.md}).
     Commits: \texttt{fd3d8d7}, \texttt{7188fc6}, \texttt{cc045d7}.
 
   \item \textbf{Vani Rudra} (Report and Demo Package):
-    Prepared this IEEE Phase~I progress report (\path{report/main.tex},
-    \path{report/phase1-report.pdf}), demonstration video
+    Prepared this IEEE Phase~I progress report (\path{phase1/report/phase1-report.tex},
+    \path{phase1/report/phase1-report.pdf}), demonstration video
     materials,
-    Phase~I submission audit checklist (\path{docs/phase1-submission.md}), and
+    Phase~I submission audit checklist (\path{phase1/docs/submission-checklist.md}), and
     final repository navigation.
     Commits: \texttt{693444d}, \texttt{da0765a}, \texttt{c0e872a},
     \texttt{f097865}, \texttt{1486e0d}, \texttt{e13598c}.
@@ -316,6 +316,6 @@ specifications.
 
 % ============================================================
 \bibliographystyle{IEEEtran}
-\bibliography{refs}
+\bibliography{references}
 
 \end{document}

@@ -29,7 +29,7 @@ Run `./scripts/run_cache_compare.sh` for the observed metrics. See [the workload
 
 ## Latency Evidence
 
-From `docs/phase2/cache-benchmarks.md` Section 3 (measured, combinational memory model):
+From `phase2/docs/cache-benchmarks.md` Section 3 (measured, combinational memory model):
 
 - **Hit latency:** 2 clock cycles (acceptance edge to response-sampling edge)
 - **Miss latency:** 3 clock cycles (acceptance edge to response-sampling edge)
@@ -42,7 +42,7 @@ From `docs/phase2/cache-benchmarks.md` Section 3 (measured, combinational memory
 - t_hit = 2.0 cycles (measured simulation)
 - M_p = 20.0 cycles (assumed refill penalty)
 - Formula: AMAT = t_hit + (1 - HR) × M_p
-- Results: see Table III in report/phase2/main.tex
+- Results: see [the per-trace AMAT results](cache-benchmarks.md#5-measured-benchmark-results).
 
 ## Addresses Used in Worked Examples
 
