@@ -1,6 +1,6 @@
 # 2-Way Set-Associative Cache with LRU Replacement
 
-Modern Computer Architecture — Project 7, Phase I
+Modern Computer Architecture — Project 7, Phases I and II
 
 A Verilog implementation of a two-way set-associative cache with least-recently-used replacement, compared with a direct-mapped cache of the same capacity.
 
@@ -12,13 +12,13 @@ The prototype supports aligned 32-bit word reads, synchronous active-high reset 
 
 ## Team
 
-| Member | Contribution |
-| --- | --- |
-| Krishna Pramod Dubale | Storage arrays, tag lookup, LRU logic and unit tests |
-| Apoorva Choudhary | Cache controller, memory model and integration tests |
-| Prachee Dhar | Direct-mapped baseline and comparison tests |
-| Kushal Sarkar | Design specification, system regressions and waveform evidence |
-| Vani Rudra | IEEE report and demonstration materials |
+| Member | Phase I | Phase II |
+| --- | --- | --- |
+| Krishna Pramod Dubale | Storage arrays, tag lookup, LRU logic and unit tests | [LRU reference model and stress tests](docs/phase2/lru-verification.md) ([PR #1](https://github.com/Kushal425/MCA-Project7-Team-5-1-MUX/pull/1)) |
+| Apoorva Choudhary | Cache controller, memory model and integration tests | [In-flight reset, handshake and timing verification](docs/phase2/controller-verification.md) ([PR #2](https://github.com/Kushal425/MCA-Project7-Team-5-1-MUX/pull/2)) |
+| Prachee Dhar | Direct-mapped baseline and comparison tests | [File-driven benchmarks and measured response latency](docs/phase2/cache-benchmarks.md) ([PR #3](https://github.com/Kushal425/MCA-Project7-Team-5-1-MUX/pull/3)) |
+| Vani Rudra | IEEE report and demonstration materials | [Phase II IEEE draft](report/phase2/main.pdf) and [interview handout](docs/phase2/interview.md) ([PR #4](https://github.com/Kushal425/MCA-Project7-Team-5-1-MUX/pull/4)) |
+| Kushal Sarkar | Design specification, system regressions and waveform evidence | [FPGA comparison flow](docs/phase2/fpga-results.md), integrated six-suite verification and corrected system-regression exit behavior |
 
 ## Run the tests
 
@@ -28,7 +28,7 @@ Install Icarus Verilog so that `iverilog` and `vvp` are on your PATH. From the r
 ./scripts/run_all.sh
 ```
 
-The five suites pass 618 checks covering storage, controller integration, the direct-mapped baseline, comparison traces and system regressions. These results apply to the supplied tests.
+The six Phase II suites pass 20,193 checks with Icarus Verilog 13.0, including 19,116 LRU reference-model checks. See the [verification breakdown](docs/phase2/evaluation-methodology.md).
 
 To regenerate the demonstration waveform:
 
@@ -43,15 +43,24 @@ Open `docs/evidence/cache_2way_demo.vcd` in GTKWave or another VCD viewer. The [
 Both caches start empty and receive identical requests.
 
 | Trace | Two-way hits | Direct-mapped hits |
-| --- | --- | --- |
-| Conflict, 5 requests | 2/5 (40%) | 0/5 (0%) |
-| Spatial locality, 6 requests | 4/6 (66.7%) | 4/6 (66.7%) |
+| --- | ---: | ---: |
+| Conflict | 2/5 (40.0%) | 0/5 (0.0%) |
+| Spatial locality | 4/6 (66.7%) | 4/6 (66.7%) |
+| Extended two-block conflict | 14/16 (87.5%) | 0/16 (0.0%) |
+| Sequential | 24/32 (75.0%) | 24/32 (75.0%) |
+| Mapping-sensitive three-block cycle | 0/30 (0.0%) | 9/30 (30.0%) |
+| **Total** | **44/89 (49.44%)** | **37/89 (41.57%)** |
 
-For `0x00, 0x80, 0x00, 0x100, 0x00`, the third request refreshes way 0. The fourth replaces block `0x80` in way 1, preserving `0x00` for the final hit. See the [comparison evidence](docs/evidence/cache_comparison_evidence.md) and [LRU explanation](docs/lru_explanation.md).
+In the five-request demo, the third request refreshes way 0. The fourth replaces block `0x80` in way 1, preserving `0x00` for the final hit. See the [Phase II benchmark evidence](docs/phase2/cache-benchmarks.md) and [LRU explanation](docs/lru_explanation.md).
 
-## Project report
+## FPGA comparison
 
-[Read the IEEE report](report/phase1-report.pdf). Editable [LaTeX source](report/main.tex), [references](report/refs.bib) and [build instructions](report/BUILD.md) are included.
+Run `./synth/run_fpga_comparison.sh` on a machine with Vivado and Artix-7 device support. [Method and evidence status](docs/phase2/fpga-results.md)
+
+## IEEE reports
+
+- [Phase I PDF](report/phase1-report.pdf) · [LaTeX source](report/main.tex) · [Build instructions](report/BUILD.md)
+- [Phase II draft PDF](report/phase2/main.pdf) · [Updated LaTeX source](report/phase2/main.tex) · [Build instructions](report/phase2/BUILD.md)
 
 ## Prototype Demonstration Video
 

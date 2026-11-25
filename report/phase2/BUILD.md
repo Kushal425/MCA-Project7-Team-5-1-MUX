@@ -37,9 +37,7 @@ pdflatex main.tex
 
 ## Status
 
-> **DRAFT** — Phase II report. FPGA synthesis results are pending from Kushal Sarkar.
-> The report is structurally complete and compilable; the FPGA section contains placeholder
-> columns that will be filled once synthesis artifacts are available.
+The LaTeX source includes the integrated Phase II results and the FPGA comparison methodology. Routed measurements require a Vivado run. The checked-in PDF is the earlier Phase II draft until the updated source is rebuilt.
 
 ## Notes
 

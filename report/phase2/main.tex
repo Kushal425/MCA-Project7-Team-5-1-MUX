@@ -69,9 +69,8 @@ Both designs target equal 128-byte capacity, 16-byte blocks, and an
 identical synchronous handshake interface ({\tt req\_valid}/{\tt req\_ready}
 master, {\tt resp\_valid}/{\tt resp\_hit} slave).
 Phase I established the RTL, interface, and architecture; Phase II extends
-the work with a four-workload comparative benchmark suite (89 total trace
-requests across conflict, spatial-locality, extended-conflict, and
-sequential traces), formal verification suites totalling 618 assertions,
+the work with five comparative workloads (89 requests per design),
+six simulation suites totalling 20,193 passing checks,
 latency characterisation under a combinational lower-memory model, and
 modelled Average Memory Access Time (AMAT) analysis.
 
@@ -83,8 +82,8 @@ anomaly in which the direct-mapped design outperforms the 2-way cache due
 to its eight-set geometry; (4)~simulation-measured acceptance-to-response
 latency averages 2.506 cycles per request for the 2-way cache versus
 2.584 cycles for direct-mapped.
-FPGA synthesis results targeting Xilinx/AMD hardware are \textbf{PENDING}
-and will be integrated when available.
+An out-of-context FPGA comparison flow is provided. Device utilization
+and routed timing measurements are pending.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -108,9 +107,9 @@ subjects them to a systematic verification and benchmarking regime.
 Phase I \cite{ieee-verilog2001} produced the RTL modules, testbenches,
 interface specification, and an initial five-access conflict trace
 demonstrating the associativity advantage.
-Phase II deepens the evaluation with four workload traces covering
+Phase II deepens the evaluation with five workload traces covering
 pathological conflict, spatial locality, and capacity behaviour, together
-with 618-assertion correctness suites and latency modelling.
+with six self-checking simulation suites and latency modelling.
 
 The remainder of this report is structured as follows:
 Section~\ref{sec:litreview} surveys related work;
@@ -164,9 +163,9 @@ FPGA implementations of cache memories commonly target Xilinx Block RAM
 (BRAM) primitives for the data array and distributed LUT-RAM for small
 tag arrays, following guidelines from the Vivado synthesis user guide
 \cite{vivado2023}.
-Our RTL uses Verilog register arrays, which Vivado infers as distributed
-RAM or BRAM depending on depth and read-port count; exact utilisation
-figures are \textbf{PENDING} from Phase II synthesis experiments.
+Our RTL uses Verilog register arrays with asynchronous lookup. The
+implementation reports are needed to determine how the tool maps them
+and to quantify utilization.
 
 % -----------------------------------------------------------------------
 \section{Proposed Solution}
@@ -295,27 +294,28 @@ realistic penalty.
 \subsection{Functional Verification}
 \label{subsec:verification}
 
-Table~\ref{tab:suites} summarises the five verification suites run across
-the Phase~I and Phase~II lifecycle.
-All 618 assertions pass with Icarus Verilog 12.0 \cite{icarus-verilog}
-on the {\tt main} branch.
+Table~\ref{tab:suites} summarizes the six suites run by
+\path{scripts/run_all.sh} with Icarus Verilog 13.0~\cite{icarus-verilog}.
+The reference-model suite checks replacement, word selection and
+independence across sets. The waveform demonstration is run separately.
 
 \begin{table}[h]
-  \caption{Verification Suite Summary (All Passing)}
+  \caption{Phase II Verification Suite Summary}
   \label{tab:suites}
   \centering
   \small
-  \begin{tabular}{llr}
+  \begin{tabular}{lr}
     \toprule
-    Suite & Owner & Assertions \\
+    Suite & Passing checks \\
     \midrule
-    LRU unit tests       & Krishna Pramod Dubale   &  51 \\
-    Controller FSM tests & Apoorva Choudhary       & 141 \\
-    Cache comparison     & Prachee Dhar            &  52 \\
-    System regression    & Kushal Sarkar           & 344 \\
-    Waveform demo        & Kushal Sarkar           &  30 \\
+    LRU unit tests & 51 \\
+    LRU reference-model stress test & 19,116 \\
+    Controller integration & 276 \\
+    Direct-mapped baseline & 30 \\
+    Cache comparison & 376 \\
+    System regression & 344 \\
     \midrule
-    \textbf{Total}       &                         & \textbf{618} \\
+    \textbf{Total} & \textbf{20,193} \\
     \bottomrule
   \end{tabular}
 \end{table}
@@ -323,7 +323,7 @@ on the {\tt main} branch.
 \subsection{Benchmark Workload Results}
 \label{subsec:benchmarks}
 
-Four trace workloads were evaluated by Prachee Dhar using
+Five trace workloads were evaluated by Prachee Dhar using
 {\tt tb/tb\_cache\_compare.sv} against on-disk traces in
 {\tt tb/traces/}.
 Table~\ref{tab:hitrates} reports hit rates and Table~\ref{tab:amat_table}
@@ -342,7 +342,7 @@ reports modelled AMAT.
     B & 6-access within-block spatial locality  & 66.7  & 66.7 \\
     C & 16-access extended two-block conflict   & 87.5  & 0.0  \\
     D & 32-access full-capacity sequential      & 75.0  & 75.0 \\
-    E & 10-access 3-block cycle (0x00/0x40/0x80)& 0.0   & 30.0 \\
+    E & 30-access 3-block cycle (0x00/0x40/0x80)& 0.0   & 30.0 \\
     \bottomrule
   \end{tabular}
 \end{table}
@@ -405,9 +405,10 @@ between associativity and hit rate is workload-dependent, not monotone.
 \subsection{Latency Characterisation}
 \label{subsec:latency}
 
-Under the combinational memory model, hit latency is 2 clock cycles
-(IDLE $\rightarrow$ LOOKUP $\rightarrow$ RESP) and miss latency is 3 cycles
-(LOOKUP $\rightarrow$ REFILL $\rightarrow$ RESP).
+Under the combinational memory model, the benchmark measures 2 clock
+cycles for a hit and 3 for a miss from request acceptance to the rising
+edge where the consumer samples the response. Registered
+\texttt{resp\_valid} first appears one rising edge earlier in each case.
 Across 89 total trace requests, the weighted average acceptance-to-response
 latency is:
 \begin{itemize}
@@ -447,86 +448,58 @@ spatial-locality traces.
   \item \textbf{Single outstanding request:} The FSM blocks in
         STATE\_REFILL, so pipelining or out-of-order requests are
         not supported.
-  \item \textbf{FPGA timing:} Measured simulation cycles cannot be
-        converted to wall-clock time without synthesis-reported $F_{\max}$.
-        FPGA results are \textbf{PENDING} (\S\ref{subsec:fpga}).
+  \item \textbf{FPGA timing:} Routed timing is pending
+        (\S\ref{subsec:fpga}). Reported latency is in simulation cycles.
 \end{itemize}
 
 \subsection{FPGA Synthesis Results}
 \label{subsec:fpga}
 
-\textbf{[PENDING — Kushal Sarkar to provide synthesis artifacts.]}
+\path{synth/run_fpga_comparison.sh} builds both tops out of context
+on the same Artix-7 device (\texttt{xc7a35tcpg236-1}) with a 10~ns clock
+constraint using Vivado~\cite{vivado2023}. The flow records utilization
+after synthesis and routing, routed setup and hold timing, and critical
+internal setup paths. It estimates the internal maximum frequency for
+each fixed routed implementation as $1000/(T_{\mathrm{clk}}-s)$~MHz,
+where $T_{\mathrm{clk}}$ and worst internal setup slack $s$ are in
+nanoseconds. This estimate excludes board I/O and external memory
+timing. FPGA results remain pending execution of the Vivado flow.
 
-Target device: Xilinx/AMD Artix-7 (or equivalent), Vivado 2023.2,
-clock constraint 100~MHz ($T_{\text{clk}} = 10$~ns)
-\cite{vivado2023}.
-Table~\ref{tab:fpga} will be completed with verified synthesis output.
-
-\begin{table}[h]
-  \caption{FPGA Synthesis Utilisation and Timing (PENDING)}
-  \label{tab:fpga}
-  \centering
-  \small
-  \begin{tabular}{lccc}
-    \toprule
-    Metric & 2-Way & Direct & Unit \\
-    \midrule
-    LUT count            & --- & --- & LUT4 \\
-    Flip-flop count      & --- & --- & FF   \\
-    BRAM usage           & --- & --- & 36Kb tiles \\
-    $W_{\text{NS}}$ (slack) & --- & --- & ns \\
-    $F_{\max}$ (reported) & --- & --- & MHz \\
-    \bottomrule
-  \end{tabular}
-\end{table}
-
-% -----------------------------------------------------------------------
 \section{Individual Contributions}
 \label{sec:contributions}
 
 \begin{itemize}
-  \item \textbf{Krishna Pramod Dubale} — Authored {\tt cache\_2way\_store.v}
-        (tag, valid, data, LRU arrays) and {\tt tb/tb\_lru\_unit.sv} (51
-        assertions covering LRU update on hit, miss, and double-eviction
-        edge cases). Phase~II branch: {\tt phase2/krishna-lru-verification}.
-
-  \item \textbf{Apoorva Choudhary} — Authored {\tt tb/tb\_cache\_2way.sv}
-        (141 assertions covering all four FSM state transitions, hit/miss
-        flag correctness, {\tt resp\_data} correctness on spatial accesses,
-        and {\tt req\_ready} deassertion during refill).
-        Phase~II branch: {\tt phase2/apoorva-controller-verification}.
-
-  \item \textbf{Prachee Dhar} — Designed and executed the four-workload
-        comparative benchmark suite ({\tt tb/tb\_cache\_compare.sv},
-        on-disk traces in {\tt tb/traces/}, {\tt scripts/run\_cache\_compare.sh}).
-        Documented results in {\tt docs/phase2/cache-benchmarks.md}.
-        Phase~II branch: {\tt phase2/prachee-cache-benchmarks}.
-
-  \item \textbf{Kushal Sarkar} — System-level integration: 344 regression
-        assertions ({\tt tb/tb\_system\_regression.sv}), waveform
-        evidence ({\tt docs/evidence/cache\_2way\_demo.vcd}),
-        HANDOFF.md entries, and ongoing FPGA synthesis.
-        Phase~II synthesis results PENDING.
-
-  \item \textbf{Vani Rudra} — Phase~II final IEEE report (this document),
-        architecture and FSM figures, address decomposition tables,
-        AMAT analysis and results discussion, and interview handout
-        ({\tt docs/phase2/interview.md}).
-        Phase~II branch: {\tt phase2/vani-final-report}.
+  \item \textbf{Krishna Pramod Dubale} developed the storage and LRU
+        RTL and added independent reference-model stress tests in
+        Phase~II (\texttt{990b237}, \texttt{d43dece}).
+  \item \textbf{Apoorva Choudhary} developed the controller and memory
+        model and added in-flight reset, busy-request and response
+        timing tests (\texttt{0371c06}, \texttt{a23c015}, \texttt{0d9e2db}).
+  \item \textbf{Prachee Dhar} developed the direct-mapped baseline and
+        added file-driven workloads, latency metrics and benchmark
+        evidence (\texttt{0fa5eb7}, \texttt{c2921b1}, \texttt{71e150a},
+        \texttt{9295cd9}).
+  \item \textbf{Kushal Sarkar} wrote the interface specification,
+        system regression and waveform demo. In Phase~II he integrated
+        the verification suites, corrected system-test failure signaling
+        and wrote the FPGA comparison flow.
+  \item \textbf{Vani Rudra} prepared the IEEE report, architecture and
+        FSM figures, evaluation methodology and interview material
+        (\texttt{f8872b0}, \texttt{9aa470f}, \texttt{065f36f},
+        \texttt{d8bb6f4}, \texttt{4557fdf}).
 \end{itemize}
 
-% -----------------------------------------------------------------------
 \section{Conclusion}
 \label{sec:conclusion}
 
-This project has demonstrated, through 618 passing assertions and four
-workload benchmarks, that 2-way set-associative caching with 1-bit LRU
-replacement eliminates conflict thrashing at a modest area cost relative
-to a direct-mapped design of equal capacity.
+The two equal-capacity caches passed 20,193 simulation checks.
+Across five workloads, the two-way design eliminated thrashing on the
+two-block conflict trace, while both caches tied on spatial-locality
+and sequential traces.
 The key quantitative result is that the 2-way cache achieves up to 87.5\%
 hit rate on extended two-block conflict workloads, while direct-mapped
 degrades to 0\%  — an AMAT improvement of $\approx\!4.9\times$ under a
-realistic 20-cycle DRAM penalty.
+assumed 20-cycle refill penalty.
 
 The set-index anomaly on the 3-block cycle trace is an important
 qualification: associativity is beneficial only when the working set fits
@@ -537,9 +510,8 @@ the block-level refill granularity equalises hit rates in that regime.
 Future work should address write operations (write-back or write-through),
 multi-level cache hierarchies, out-of-order request handling, and FPGA
 physical implementation with accurate timing closure.
-Integrating Kushal's FPGA synthesis data will convert the modelled AMAT
-figures into wall-clock performance comparisons and confirm whether the
-combinational-memory FSM meets 100~MHz timing.
+Running the FPGA flow will quantify the resource difference and test
+the 100~MHz internal timing target.
 
 % -----------------------------------------------------------------------
 \section*{Acknowledgment}

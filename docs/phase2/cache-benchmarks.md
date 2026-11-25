@@ -110,14 +110,13 @@ To ensure academic and professional rigor, three distinct timing domains are exp
 
 1. **Measured RTL Simulation Cycles:**
    $$\text{Measured Latency} = (\text{Hits} \times 2 + \text{Misses} \times 3) / \text{Total Accesses}$$
-   This metric measures the actual hardware pipeline depth when connected to the deterministic 1-cycle memory model (`mem_block_model`).
+   This metric measures the actual hardware pipeline depth when connected to the deterministic combinational memory model (`mem_block_model`).
 2. **Modeled AMAT (Average Memory Access Time):**
    $$\text{AMAT} = t_{\text{hit}} + (1 - \text{Hit Rate}) \times M_{\text{penalty}}$$
    Where $t_{\text{hit}} = 2.0 \text{ cycles}$ and assumed DRAM/L2 refill penalty $M_{\text{penalty}} = 20.0 \text{ cycles}$.
    This models system-level CPU stall cycles under realistic off-chip memory latency.
 3. **FPGA Clock Frequency:**
-   The design is synthesized targeting a 100 MHz clock period ($T_{\text{clk}} = 10 \text{ ns}$). Wall-clock execution time is computed as:
-   $$t_{\text{wall-clock}} = \text{Cycles} \times 10 \text{ ns}$$
+   The [FPGA comparison flow](fpga-results.md) uses a 100 MHz target constraint. Wall-clock latency at that clock would be the simulated cycle count multiplied by 10 ns, conditional on timing closure and the stated memory model. Routed results are pending.
 
 ---
 

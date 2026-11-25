@@ -1,40 +1,38 @@
-# Phase II Evaluation Methodology Notes
-# Source data for report/phase2/main.tex Results section
+# Phase II Evaluation Methodology
 
 ## Verification Suite Evidence
 
-| Suite | File | Owner | Assertions | Branch |
-|-------|------|-------|-----------|--------|
-| LRU unit | `tb/tb_lru_unit.sv` | Krishna Pramod Dubale | 51 | phase2/krishna-lru-verification |
-| Controller FSM | `tb/tb_cache_2way.sv` | Apoorva Choudhary | 141 | phase2/apoorva-controller-verification |
-| Cache comparison | `tb/tb_cache_compare.sv` | Prachee Dhar | 52 | phase2/prachee-cache-benchmarks |
-| System regression | `tb/tb_system_regression.sv` | Kushal Sarkar | 344 | main (merged) |
-| Waveform demo | `tb/tb_demo_waveform.sv` | Kushal Sarkar | 30 | main (merged) |
-| **Total** | | | **618** | |
+| Suite | Testbench | Owner | Passing checks |
+| --- | --- | --- | ---: |
+| LRU unit | `tb/tb_cache_2way_store.sv` | Krishna Pramod Dubale | 51 |
+| LRU reference-model stress test | `tb/tb_cache_2way_store_stress.sv` | Krishna Pramod Dubale | 19,116 |
+| Controller FSM | `tb/tb_cache_2way.sv` | Apoorva Choudhary | 276 |
+| Direct-mapped baseline | `tb/tb_cache_direct.sv` | Prachee Dhar | 30 |
+| Cache comparison | `tb/tb_cache_compare.sv` | Prachee Dhar | 376 |
+| System regression | `tb/tb_system_regression.sv` | Kushal Sarkar | 344 |
+| **Total** | | | **20,193** |
 
-Run: `./scripts/run_all.sh` on `main` — all 618 pass.
+Run `./scripts/run_all.sh` with Icarus Verilog. The separate waveform generator records the five-request LRU demo.
 
 ## Benchmark Trace Evidence
 
-Source: `docs/phase2/cache-benchmarks.md` (Prachee Dhar, branch `phase2/prachee-cache-benchmarks`, merged to `main` 2026-11-16).
+| Trace | Accesses per design | Two-way hits | Direct hits |
+| --- | ---: | ---: | ---: |
+| A — Conflict | 5 | 2 | 0 |
+| B — Spatial locality | 6 | 4 | 4 |
+| C — Extended conflict | 16 | 14 | 0 |
+| D — Sequential | 32 | 24 | 24 |
+| E — Mapping-sensitive cycle | 30 | 0 | 9 |
+| **Total** | **89** | **44** | **37** |
 
-| Trace | File | Accesses | 2-Way Hits | Direct Hits | 2-Way HR% | Direct HR% |
-|-------|------|----------|-----------|------------|----------|-----------|
-| A — Conflict (5) | `tb/traces/conflict_trace.hex` | 5 | 2 | 0 | 40.0 | 0.0 |
-| B — Spatial (6) | `tb/traces/locality_trace.hex` | 6 | 4 | 4 | 66.7 | 66.7 |
-| C — Extended conflict (16) | `tb/traces/conflict_long_trace.hex` | 16 | 14 | 0 | 87.5 | 0.0 |
-| D — Sequential (32) | `tb/traces/sequential_trace.hex` | 32 | 24 | 24 | 75.0 | 75.0 |
-| E — 3-block cycle (10) | `tb/traces/three_block_trace.hex` | 10 | 0 | 3 | 0.0 | 30.0 |
-| **Total** | | **69** | | | | |
-
-> Note: 89 total requests counted across all latency tests in `docs/phase2/cache-benchmarks.md` Section 3; above table covers the 4+1 primary workload traces.
+Run `./scripts/run_cache_compare.sh` for the observed metrics. See [the workload definitions and timing methodology](cache-benchmarks.md).
 
 ## Latency Evidence
 
 From `docs/phase2/cache-benchmarks.md` Section 3 (measured, combinational memory model):
 
-- **Hit latency:** 2 clock cycles (IDLE → LOOKUP → RESP)
-- **Miss latency:** 3 clock cycles (IDLE → LOOKUP → REFILL → RESP)
+- **Hit latency:** 2 clock cycles (acceptance edge to response-sampling edge)
+- **Miss latency:** 3 clock cycles (acceptance edge to response-sampling edge)
 - **Weighted average across 89 requests:**
   - 2-way: 2.506 cycles/request (12.112 cycles under M_p=20)
   - Direct: 2.584 cycles/request (13.685 cycles under M_p=20)
@@ -42,7 +40,7 @@ From `docs/phase2/cache-benchmarks.md` Section 3 (measured, combinational memory
 ## AMAT Model Parameters
 
 - t_hit = 2.0 cycles (measured simulation)
-- M_p = 20.0 cycles (modelled DRAM refill, representative)
+- M_p = 20.0 cycles (assumed refill penalty)
 - Formula: AMAT = t_hit + (1 - HR) × M_p
 - Results: see Table III in report/phase2/main.tex
 

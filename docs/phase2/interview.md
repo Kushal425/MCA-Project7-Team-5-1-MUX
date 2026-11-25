@@ -25,7 +25,7 @@ be able to answer cross-cutting questions about the architecture.
 | # | Speaker | Section | Key File(s) |
 |---|---------|---------|-------------|
 | 1 | **Kushal Sarkar** | System Integration & FPGA | `tb/tb_system_regression.sv`, `docs/evidence/` |
-| 2 | **Krishna Pramod Dubale** | LRU Storage Design | `rtl/cache_2way_store.v`, `tb/tb_lru_unit.sv` |
+| 2 | **Krishna Pramod Dubale** | LRU Storage Design | `rtl/cache_2way_store.v`, `tb/tb_cache_2way_store.sv` |
 | 3 | **Apoorva Choudhary** | FSM Controller Verification | `tb/tb_cache_2way.sv` |
 | 4 | **Prachee Dhar** | Comparative Benchmarks | `docs/phase2/cache-benchmarks.md`, `tb/traces/` |
 | 5 | **Vani Rudra** | Report, Figures & AMAT Analysis | `report/phase2/main.tex`, `docs/phase2/interview.md` |
@@ -39,11 +39,11 @@ be able to answer cross-cutting questions about the architecture.
    cd /path/to/MCA-Project7-Team-5-1-MUX
    ./scripts/run_all.sh
    ```
-   Expected output: all 5 suites pass (618 assertions total).
+   Expected output: all six suites pass (20,193 checks).
 
 2. **Show the waveform** — open `docs/evidence/cache_2way_demo.vcd` in VS Code (WaveTrace extension).
-   - Point to `req_valid` going high at t=0.
-   - Point to `resp_valid` going high at t=20 ns (hit) or t=30 ns (miss).
+   - Point to the accepted third request at 115 ns and its registered hit response visible at the 126 ns sample.
+   - Show the fourth request replacing Way 1 at 165 ns and the final hit visible at the 196 ns sample.
    - Highlight the `state[1:0]` transitions: `00→01→10→11→00` (IDLE→LOOKUP→REFILL→RESP→IDLE).
 
 3. **Show the benchmark comparison** — open `docs/phase2/cache-benchmarks.md`.
@@ -55,34 +55,34 @@ be able to answer cross-cutting questions about the architecture.
 ## Speaker 1 — Kushal Sarkar: System Integration & FPGA
 
 **What you own:** `tb/tb_system_regression.sv` (344 assertions), waveform
-evidence (`docs/evidence/cache_2way_demo.vcd`), `HANDOFF.md`, FPGA synthesis.
+evidence (`docs/evidence/cache_2way_demo.vcd`), and the [FPGA comparison flow](fpga-results.md).
 
 **Likely questions:**
 
 1. *"Explain your verification methodology. How did you ensure end-to-end correctness?"*
-   > Run all five testbench suites via `run_all.sh`. Each suite uses `$display` + `if (!expr) $fatal` to report assertion failures with file/line references. The 344 regression assertions cover all address boundaries, back-to-back requests, and reset behaviour.
+   > Run all six testbench suites via `run_all.sh`. Each suite uses `$display` + `if (!expr) $fatal` to report assertion failures with file/line references. The 344 regression assertions cover all address boundaries, back-to-back requests, and reset behaviour.
 
 2. *"What does the waveform show at t=115 ns and t=196 ns?"*
-   > At t=115 ns: `resp_valid` rises with `resp_hit=1` for the third access (0x00 returns to cache). At t=196 ns: `resp_valid` rises with `resp_hit=0` for the miss on 0x100 (LRU evicts Way 1).
+   > The third request for `0x00` is accepted at 115 ns and its hit is visible at the 126 ns sample. The fourth request for `0x100` evicts Way 1 at 165 ns. The last request hits on `0x00`, as observed at 196 ns.
 
 3. *"Why does req_ready deassert during STATE_REFILL?"*
    > The FSM can only handle one request at a time. `req_ready` is combinationally `high` only in `STATE_IDLE`, so during LOOKUP/REFILL/RESP the master must hold its request or buffer it externally.
 
 4. *"What FPGA device and tool are you targeting?"*
-   > Xilinx/AMD Artix-7, Vivado 2023.2, 100 MHz clock constraint. Synthesis results are pending — the RTL is complete and synthesisable.
+   > The comparison flow targets the Artix-7 `xc7a35tcpg236-1` with a 10 ns clock constraint in Vivado. Routed utilization and timing are pending.
 
 ---
 
 ## Speaker 2 — Krishna Pramod Dubale: LRU Storage Design
 
 **What you own:** `rtl/cache_2way_store.v` (tag, valid, data, LRU arrays),
-`tb/tb_lru_unit.sv` (51 assertions).
+`tb/tb_cache_2way_store.sv` (51 assertions).
 
 **Likely questions:**
 
 1. *"How does the LRU bit update differ on a hit versus a refill?"*
    > On a **hit** in Way *w*: `lru_bit <= 1 - w` (point away from the way just used, marking the other way as LRU victim).  
-   > On a **miss/refill**: the way selected for eviction is `lru_bit`; after writing, `lru_bit <= 1 - lru_bit` (flip to point away from the freshly filled way).
+   > On a **miss/refill**: the selected way is the first invalid slot, or the way indicated by `lru_bit` if both are valid. The bit then points to the other way.
 
 2. *"What happens if both ways are invalid (cold start)?"*
    > The LRU bit initialises to 0, so Way 0 fills first. After that, Way 1 fills. After both are valid, standard LRU applies.
@@ -91,13 +91,13 @@ evidence (`docs/evidence/cache_2way_demo.vcd`), `HANDOFF.md`, FPGA synthesis.
    > With exactly 2 ways, 1 bit encodes perfect LRU: it tracks which way was used more recently. A counter would require log2(2)=1 bit anyway, so there is no information gain from a larger counter.
 
 4. *"How did you test the double-eviction edge case?"*
-   > `tb_lru_unit.sv` sends three addresses all mapping to Set 0 sequentially. Assertions verify that after the third address, the first address's data is gone (evicted) and the LRU bit correctly reflects the two-entry FIFO order.
+   > The unit test checks both victim directions and that a hit refreshes recency. The stress test compares the RTL against an independently ordered pair of resident entries for each set.
 
 ---
 
 ## Speaker 3 — Apoorva Choudhary: FSM Controller Verification
 
-**What you own:** `tb/tb_cache_2way.sv` (141 assertions covering FSM
+**What you own:** `tb/tb_cache_2way.sv` (276 checks covering FSM
 transitions, hit/miss flags, `resp_data` correctness, `req_ready` behaviour).
 
 **Likely questions:**
@@ -156,8 +156,8 @@ transitions, hit/miss flags, `resp_data` correctness, `req_ready` behaviour).
 3. *"Explain the address decomposition. Why does the 2-way cache have a larger tag?"*
    > Both caches address 128 bytes in 8 blocks of 16 bytes. 2-way uses 4 sets (2 bits: addr[5:4]), leaving 26 bits for the tag (addr[31:6]). Direct-mapped uses 8 sets (3 bits: addr[6:4]), leaving 25 bits for the tag (addr[31:7]). The extra set-index bit in direct-mapped is what causes addr[6] to separate `0x40` from `0x00` in Set geometry.
 
-4. *"What is the significance of the 618-assertion count?"*
-   > 618 assertions across 5 suites provide high coverage of the state space: LRU transitions (51), FSM paths including corner cases (141), cross-design comparison under 4 traces (52), system regression across all addresses (344), and waveform correctness (30). A single failing assertion aborts the run with `$fatal`, so a passing run proves the design is correct against all specified scenarios.
+4. *"What do the 20,193 checks cover?"*
+   > The six suites check directed storage behavior, the independent LRU model, controller transactions, direct-mapped behavior, competition across five benchmark traces and system regressions. The total is a count of executed simulation checks.
 
 ---
 
