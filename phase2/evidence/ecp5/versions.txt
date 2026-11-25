@@ -1,0 +1,6 @@
+Yosys 0.71+101 (git sha1 c20ecc62a, Release, Clang /usr/bin/clang++ 21.1.8)
+"nextpnr-ecp5" -- Next Generation Place and Route (Version nextpnr-0.11.1-123-ge4c78599)
+Device: LFE5U-25F CABGA381 speed grade 6
+Clock target: 100 MHz
+Seed: 1
+Mode: Out of context, post-route

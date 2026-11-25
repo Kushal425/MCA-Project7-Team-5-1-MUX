@@ -65,7 +65,7 @@ In the five-request demo, the third request refreshes way 0. The fourth replaces
 
 ## FPGA comparison
 
-Run `./synth/run_fpga_comparison.sh` on a machine with Vivado and Artix-7 device support. [Method and evidence status](phase2/docs/fpga-results.md)
+Both cores met the 100 MHz target after routing on ECP5. The estimated maximum frequencies were 102.64 MHz for two-way and 137.55 MHz for direct-mapped. [Resource counts and raw evidence](phase2/docs/fpga-results.md)
 
 ## IEEE reports
 

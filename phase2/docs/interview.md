@@ -8,7 +8,7 @@ MCA Project 7 · Two-Way Set-Associative Cache with LRU · Team 5, Rishihood Uni
 
 The Phase II interview covers the complete lifecycle of the project:
 RTL design, verification methodology, benchmark evaluation, and FPGA
-synthesis (pending). Each team member defends their own component and must
+implementation results. Each team member defends their own component and must
 be able to answer cross-cutting questions about the architecture.
 
 **Rehearsal target:** 20 minutes total, about 4 minutes per speaker. Use the instructor’s timing for the actual interview.
@@ -67,8 +67,8 @@ evidence (`phase1/evidence/cache-2way-demo.vcd`), and the [FPGA comparison flow]
 3. *"Why does req_ready deassert during STATE_REFILL?"*
    > The FSM can only handle one request at a time. `req_ready` is combinationally `high` only in `STATE_IDLE`, so during LOOKUP/REFILL/RESP the master must hold its request or buffer it externally.
 
-4. *"What FPGA device and tool are you targeting?"*
-   > The comparison flow targets the Artix-7 `xc7a35tcpg236-1` with a 10 ns clock constraint in Vivado. Routed utilization and timing are pending.
+4. *"What FPGA device and tools did you use?"*
+   > We ran Yosys and nextpnr out of context on an ECP5 LFE5U-25F. Both designs met the 100 MHz target. The two-way estimate was 102.64 MHz with 1,817 logic cells. The direct-mapped estimate was 137.55 MHz with 548 logic cells.
 
 ---
 
@@ -195,5 +195,3 @@ transitions, hit/miss flags, `resp_data` correctness, `req_ready` behaviour).
 ```
 
 ---
-
-*FPGA resource and timing measurements are pending.*

@@ -117,7 +117,7 @@ We report three timing quantities.
    Where $t_{\text{hit}} = 2.0 \text{ cycles}$ and assumed DRAM/L2 refill penalty $M_{\text{penalty}} = 20.0 \text{ cycles}$.
    The 20-cycle value models an assumed additional refill cost.
 3. **FPGA Clock Frequency:**
-   The [FPGA comparison flow](fpga-results.md) uses a 100 MHz target constraint. Wall-clock latency at that clock would be the simulated cycle count multiplied by 10 ns, conditional on timing closure and the stated memory model. Routed results are pending.
+   The [FPGA comparison flow](fpga-results.md) uses a 100 MHz target constraint. Wall-clock latency at that clock would be the simulated cycle count multiplied by 10 ns, conditional on timing closure and the stated memory model. The routed ECP5 estimates were 102.64 MHz and 137.55 MHz for the two-way and direct-mapped cores, respectively.
 
 ---
 

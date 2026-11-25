@@ -32,7 +32,7 @@ while the direct-mapped cache missed on all 16. On a three-block cycle,
 direct mapping hit on 9 of 30 requests and the two-way cache missed on all
 30. The sequential and spatial-locality traces tied. Mean response
 latencies over the five traces were 2.506 and 2.584 simulation cycles,
-respectively. This evaluation reports functional simulation.
+respectively. Routed ECP5 estimates were 102.64 and 137.55~MHz.
 \end{abstract}
 
 \begin{IEEEkeywords}
@@ -201,18 +201,32 @@ are updated one edge earlier. Over the 89 requests the two-way cache
 took 223 cycles in total, or 2.506 cycles per request. The direct-mapped
 cache took 230 cycles, or 2.584 per request.
 
-Using $\mathrm{AMAT}=t_{\mathrm{hit}}+(1-h)M$, where $h$ is hit rate
-and $M$ is the additional miss penalty, an assumed $M=20$ cycles gives
-4.5 cycles for the two-way cache and 22.0 for direct mapping on the
-extended conflict trace. The model uses $t_{\mathrm{hit}}=2$ cycles.
-The assumed penalty represents a separate memory scenario.
+For the extended conflict trace, $\mathrm{AMAT}=t_{\mathrm{hit}}+(1-h)M$
+gives 4.5 and 22.0 cycles for two-way and direct mapping. We use the
+trace hit rate $h$, two-cycle hits and a 20-cycle miss penalty $M$.
 
-The repository includes a Vivado flow targeting
-\texttt{xc7a35tcpg236-1} with a common 10~ns clock constraint for both
-designs. The flow collects utilization and post-route internal timing.
-A Vivado run is still needed for FPGA resource counts and a maximum
-clock frequency estimate. The simulation cycle counts describe the
-read interface with its combinational memory model.
+Yosys and nextpnr placed and routed both cores out of context on an
+ECP5 LFE5U-25F, CABGA381, speed grade~6. Both met the 100~MHz target.
+The two-way core used more logic and had the lower estimated maximum
+clock frequency. These estimates cover the internal core paths.
+
+\begin{table}[ht]
+\centering
+\caption{Post-Route FPGA Utilization and Timing}
+\label{tab:fpga}
+\small
+\begin{tabular}{@{}lrr@{}}
+\toprule
+Metric & Two-way & Direct \\
+\midrule
+Logic cells & 1,817 & 548 \\
+Flip-flops & 82 & 79 \\
+Distributed RAM write cells & 78 & 39 \\
+Block RAM & 0 & 0 \\
+Estimated max. clock (MHz) & 102.64 & 137.55 \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 \section{Individual Contributions}
 
@@ -228,7 +242,7 @@ added file-driven benchmarks and recorded hit counts and latency for
 both designs.
 \item \textbf{Kushal Sarkar} wrote the interface specification, system
 regressions, and waveform demo, integrated the six-suite test runner,
-fixed regression exit handling, and added the FPGA comparison flow.
+fixed regression exit handling, and ran the FPGA comparison.
 \item \textbf{Vani Rudra} prepared the IEEE reports, architecture and
 controller figures, and the interview handout.
 \end{enumerate}
@@ -239,9 +253,8 @@ The two-way cache reduced misses when two active blocks shared a set.
 The three-block cycle showed how the direct-mapped cache's extra index
 bit can keep one of those blocks resident. Both designs store the same
 amount of data, so the difference in hit count comes from how addresses
-are placed and replaced. The comparison establishes the behavior for
-these read traces. The hardware cost and clock rate require the routed
-FPGA measurements.
+are placed and replaced. Both designs met 100~MHz on the ECP5 target. The two-way core used more
+logic and had a lower estimated maximum clock rate.
 
 \bibliographystyle{IEEEtran}
 \bibliography{references}
